@@ -24,6 +24,7 @@ Parts of this code are based on the following repositories:
 - RoPE-ViT (Apache-2.0): https://github.com/naver-ai/rope-vit
 - CodeLlama (Meta): https://github.com/meta-llama/codellama
 
+```
 📦 Position Encoding Comparison
  ┣ 📂 models                  # Model implementations
  ┃ ┣ 📂 positional_encoding   # Positional encoding variants
@@ -55,3 +56,4 @@ Parts of this code are based on the following repositories:
  ┣ 📜 main.py                 # Main script to run experiments, with visualization
  ┣ 📜 requirements.txt        # Project dependencies
  ┗ 📜 README.md               # Project documentation
+ ```
