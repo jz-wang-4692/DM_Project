@@ -19,7 +19,7 @@ ROPE_VIT_PATH = Path(__file__).parent.parent / "rope-vit"
 sys.path.append(str(ROPE_VIT_PATH))
 
 # Import RoPE implementations from the cloned repo
-from rope_vit.models.vit_rope import (
+from models.vit_rope import (
     rope_mixed_deit_small_patch16_LS,
     rope_axial_deit_small_patch16_LS
 )

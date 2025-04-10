@@ -2,12 +2,17 @@ import torch
 import torch.nn as nn
 import math
 import sys
+from pathlib import Path
 
-# Add the RoPE repo to path
-sys.path.append('./rope-vit')
+# Add paths for imports
+ROPE_VIT_PATH = Path(__file__).parent.parent.parent / "rope-vit"
+sys.path.append(str(ROPE_VIT_PATH))
 
-# Import the base attention implementation
-from self_attn.rope_self_attn import Attention
+# Add the self-attn directory specifically to handle the hyphen
+sys.path.append(str(ROPE_VIT_PATH / "self-attn"))
+
+# Now import directly from the module
+from rope_self_attn import Attention
 
 class PolynomialPositionalAttention(Attention):
     """Self-Attention with Polynomial Relative Positional Encoding based on L1 distances"""
