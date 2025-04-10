@@ -38,10 +38,10 @@ class PolynomialPositionalAttention(Attention):
         self._precompute_distances()
     
     def _precompute_distances(self):
-        # Create 2D grid coordinates
+        # Create 2D grid coordinates with float dtype
         pos_i, pos_j = torch.meshgrid(
-            torch.arange(self.grid_size),
-            torch.arange(self.grid_size),
+            torch.arange(self.grid_size, dtype=torch.float32),  # Use float32 type
+            torch.arange(self.grid_size, dtype=torch.float32),  # Use float32 type
             indexing='ij'
         )
         pos_i = pos_i.flatten()  # [grid_size²]
@@ -53,7 +53,7 @@ class PolynomialPositionalAttention(Attention):
         
         manhattan_dist = torch.abs(dist_i) + torch.abs(dist_j)  # L1 distance
         
-        # Precompute powers for polynomial
+        # Precompute powers for polynomial (ensure float type)
         powers = torch.stack([manhattan_dist ** i for i in range(self.polynomial_degree + 1)])
         self.register_buffer('dist_powers', powers)  # [degree+1, grid_size², grid_size²]
     

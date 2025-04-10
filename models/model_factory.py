@@ -14,10 +14,12 @@ import torch.nn as nn
 import timm
 from pathlib import Path
 
+# In model_factory.py, add import
+from models.positional_encoding.fixed_rope_mixed import FixedRoPEMixedModel
+
 # Add RoPE-ViT path to sys.path for imports
 ROPE_VIT_PATH = Path(__file__).parent.parent / "rope-vit"
 sys.path.append(str(ROPE_VIT_PATH))
-
 # Import RoPE implementations from the cloned repo
 from models.vit_rope import (
     rope_mixed_deit_small_patch16_LS,
@@ -97,33 +99,18 @@ def create_vit_model(
         # ViT with RoPE-Axial from Heo et al.
         model = rope_axial_deit_small_patch16_LS(
             img_size=img_size,
-            patch_size=patch_size,
-            embed_dim=embed_dim,
-            depth=depth,
-            num_heads=num_heads,
-            mlp_ratio=mlp_ratio,
-            qkv_bias=qkv_bias,
-            drop_rate=drop_rate,
-            attn_drop_rate=attn_drop_rate,
             num_classes=num_classes,
             pretrained=False
         )
         return model
-    
+
+
+    # In the rope_mixed case in the create_vit_model function:
     elif pe_type == 'rope_mixed':
-        # ViT with RoPE-Mixed from Heo et al.
-        model = rope_mixed_deit_small_patch16_LS(
+        # Use the fixed wrapper model
+        model = FixedRoPEMixedModel(
             img_size=img_size,
-            patch_size=patch_size,
-            embed_dim=embed_dim,
-            depth=depth,
-            num_heads=num_heads,
-            mlp_ratio=mlp_ratio,
-            qkv_bias=qkv_bias,
-            drop_rate=drop_rate,
-            attn_drop_rate=attn_drop_rate,
-            num_classes=num_classes,
-            pretrained=False
+            num_classes=num_classes
         )
         return model
     
