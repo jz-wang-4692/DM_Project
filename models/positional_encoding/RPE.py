@@ -15,7 +15,11 @@ sys.path.append(str(ROPE_VIT_PATH / "self-attn"))
 from rope_self_attn import Attention
 
 class RelativePositionalAttention(Attention):
-    """Self-Attention with regular Relative Positional Encoding (2L-1 parameters)"""
+    """Self-Attention with efficient additive Relative Positional Encoding
+    
+    This implementation uses a direct additive bias approach:
+    softmax(Q*K^T / sqrt(d_QK) + RelPosBias)
+    """
     
     def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
         super().__init__(dim, num_heads, qkv_bias, qk_scale, attn_drop, proj_drop)
@@ -26,13 +30,15 @@ class RelativePositionalAttention(Attention):
         # For CIFAR-10 with patch size 4, we get 8x8=64 patches
         self.seq_len = 64  # Calculate based on image size and patch size
         
-        # Create a learnable relative position embedding
-        # We need 2*seq_len-1 parameters for all relative positions
-        self.rel_pos_embed = nn.Parameter(torch.zeros(2 * self.seq_len - 1, self.head_dim))
-        # Initialize with normal distribution
-        nn.init.trunc_normal_(self.rel_pos_embed, std=.02)
+        # Create a learnable relative position bias table
+        # Use a direct table for all relative positions and all heads
+        size = 2 * self.seq_len - 1
+        self.rel_pos_bias_table = nn.Parameter(torch.zeros(size, self.num_heads))
         
-        # Create indices for relative positions
+        # Initialize with truncated normal distribution
+        nn.init.trunc_normal_(self.rel_pos_bias_table, std=.02)
+        
+        # Create relative position index mapping
         pos_indices = torch.arange(self.seq_len)
         i, j = torch.meshgrid(pos_indices, pos_indices, indexing='ij')
         rel_pos_indices = i.flatten() - j.flatten() + self.seq_len - 1
@@ -47,28 +53,25 @@ class RelativePositionalAttention(Attention):
         attn = (q @ k.transpose(-2, -1)) * self.scale
         
         # Apply relative position bias
-        # Extract CLS token interaction separately
+        # Handle CLS token separately
         cls_attn = attn[:, :, 0:1, :]  # (B, H, 1, N)
         patch_attn = attn[:, :, 1:, 1:]  # (B, H, N-1, N-1)
         
-        # Get relative position embeddings for patches
-        rel_pos_bias = self.rel_pos_embed[self.rel_pos_indices]  # (seq_len, seq_len, head_dim)
+        # Get relative position bias for patches
+        # Shape: [seq_len, seq_len, num_heads]
+        rel_pos_bias = self.rel_pos_bias_table[self.rel_pos_indices].permute(2, 0, 1)
         
-        # Convert to attention bias through dot product with q
-        # Reshape q_patch to (B, H, N-1, head_dim)
-        q_patch = q[:, :, 1:]
+        # Add bias directly to attention scores (efficient additive approach)
+        # Permute rel_pos_bias to [num_heads, seq_len, seq_len] for addition
+        patch_attn = patch_attn + rel_pos_bias.unsqueeze(0)  # [B, H, seq_len, seq_len]
         
-        # Compute position-aware attention scores
-        # (B, H, N-1, head_dim) × (N-1, N-1, head_dim) -> (B, H, N-1, N-1)
-        rel_logits = torch.einsum('bhid,ijd->bhij', q_patch, rel_pos_bias)
-        
-        # Add to patch attention
-        patch_attn = patch_attn + rel_logits
-        
-        # Reconstruct full attention
+        # Reconstruct full attention matrix
         attn = torch.cat([cls_attn, torch.cat([attn[:, :, 1:, 0:1], patch_attn], dim=3)], dim=2)
         
+        # Apply softmax after adding the bias
         attn = attn.softmax(dim=-1)
+        
+        # Apply dropout
         attn = self.attn_drop(attn)
         
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
