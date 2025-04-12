@@ -14,6 +14,9 @@ import torch.nn as nn
 import timm
 from pathlib import Path
 
+from functools import partial
+from timm.models import _cfg
+
 # In model_factory.py, add import
 from models.positional_encoding.fixed_rope_mixed import FixedRoPEMixedModel
 
@@ -23,7 +26,10 @@ sys.path.append(str(ROPE_VIT_PATH))
 # Import RoPE implementations from the cloned repo
 from models.vit_rope import (
     rope_mixed_deit_small_patch16_LS,
-    rope_axial_deit_small_patch16_LS
+    rope_axial_deit_small_patch16_LS,
+    rope_vit_models,
+    RoPE_Layer_scale_init_Block,
+    RoPEAttention
 )
 
 # Import custom positional encoding implementations
@@ -97,11 +103,24 @@ def create_vit_model(
     
     elif pe_type == 'rope_axial':
         # ViT with RoPE-Axial from Heo et al.
-        model = rope_axial_deit_small_patch16_LS(
-            img_size=img_size,
-            num_classes=num_classes,
-            pretrained=False
-        )
+        # model = rope_axial_deit_small_patch16_LS(
+        #     img_size=img_size,
+        #     num_classes=num_classes,
+        #     pretrained=False
+        # )
+        model = rope_vit_models(
+        img_size = img_size, 
+        patch_size=patch_size, 
+        embed_dim=embed_dim, 
+        depth=depth, 
+        num_heads=num_heads, 
+        mlp_ratio=mlp_ratio, 
+        qkv_bias=qkv_bias,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), 
+        block_layers=RoPE_Layer_scale_init_Block, 
+        Attention_block=RoPEAttention,
+        rope_theta=100.0, rope_mixed=False, **kwargs)
+        model.default_cfg = _cfg()
         return model
 
 
