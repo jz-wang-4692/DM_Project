@@ -6,9 +6,17 @@ import torch.nn as nn
 import sys
 from pathlib import Path
 
+from functools import partial
+from timm.models.vision_transformer import _cfg
+
 # Add the RoPE-ViT repo path to the system path
 ROPE_VIT_PATH = Path(__file__).parent.parent.parent / "rope-vit"
 sys.path.append(str(ROPE_VIT_PATH))
+from models.vit_rope import (
+    rope_vit_models,
+    RoPE_Layer_scale_init_Block,
+    RoPEAttention
+    )
 
 # Fixed version of reshape_for_broadcast that avoids in-place operations
 def fixed_reshape_for_broadcast(freqs_cis, x):
@@ -41,7 +49,7 @@ def fixed_apply_rotary_emb(xq, xk, freqs_cis):
 
 # Wrapper class for the model that uses fixed operations
 class FixedRoPEMixedModel(nn.Module):
-    def __init__(self, img_size=32, num_classes=10):
+    def __init__(self, img_size=32, num_classes=10, **kwargs):
         super().__init__()
         # Import here to ensure our monkey-patching happens first
         from models.vit_rope import rope_mixed_deit_small_patch16_LS
@@ -53,11 +61,16 @@ class FixedRoPEMixedModel(nn.Module):
         vit_rope.apply_rotary_emb = fixed_apply_rotary_emb
         
         # Now create the model with the patched function
-        self.model = rope_mixed_deit_small_patch16_LS(
-            img_size=img_size,
-            num_classes=num_classes,
-            pretrained=False
-        )
+        # self.model = rope_mixed_deit_small_patch16_LS(
+        #     img_size=img_size,
+        #     num_classes=num_classes,
+        #     pretrained=False
+        # )
+        self.model = rope_vit_models(
+        img_size = img_size, patch_size=16, embed_dim=384, depth=12, num_heads=6, mlp_ratio=4, qkv_bias=True,
+        norm_layer=partial(nn.LayerNorm, eps=1e-6), block_layers=RoPE_Layer_scale_init_Block, Attention_block=RoPEAttention,
+        rope_theta=10.0, rope_mixed=True, **kwargs)
+        self.model.default_cfg = _cfg()
     
     def forward(self, x):
         return self.model(x)
