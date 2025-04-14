@@ -21,14 +21,14 @@ class RelativePositionalAttention(Attention):
     softmax(Q*K^T / sqrt(d_QK) + RelPosBias)
     """
     
-    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., img_size=32, patch_size=4):
         super().__init__(dim, num_heads, qkv_bias, qk_scale, attn_drop, proj_drop)
         self.dim = dim
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
-        
-        # For CIFAR-10 with patch size 4, we get 8x8=64 patches
-        self.seq_len = 64  # Calculate based on image size and patch size
+
+        # Dynamic sequence length calculation
+        self.seq_len = (img_size // patch_size) ** 2
         
         # Create a learnable relative position bias table
         # Use a direct table for all relative positions and all heads

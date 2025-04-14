@@ -17,16 +17,14 @@ from rope_self_attn import Attention
 class PolynomialPositionalAttention(Attention):
     """Self-Attention with Polynomial Relative Positional Encoding based on L1 distances"""
     
-    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., 
-                 proj_drop=0., polynomial_degree=3):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., polynomial_degree=3, img_size=32, patch_size=4):
         super().__init__(dim, num_heads, qkv_bias, qk_scale, attn_drop, proj_drop)
         self.dim = dim
         self.num_heads = num_heads
         self.polynomial_degree = polynomial_degree
-        
-        # For CIFAR-10 with patch size 4, we get 8x8=64 patches
-        # Calculate patch grid size
-        self.grid_size = 8  # sqrt of number of patches
+
+        # Dynamic grid size calculation
+        self.grid_size = img_size // patch_size
         
         # Create learnable coefficients for the polynomial
         # One set per attention head for more expressivity
