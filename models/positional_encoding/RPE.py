@@ -21,8 +21,8 @@ class RelativePositionalAttention(Attention):
     softmax(Q*K^T / sqrt(d_QK) + RelPosBias)
     """
     
-    def init(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., img_size=32, patch_size=4):
-        super().init(dim, num_heads, qkv_bias, qk_scale, attn_drop, proj_drop)
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., img_size=32, patch_size=4):
+        super().__init__(dim, num_heads, qkv_bias, qk_scale, attn_drop, proj_drop)
         self.dim = dim
         self.num_heads = num_heads
         self.head_dim = dim // num_heads
