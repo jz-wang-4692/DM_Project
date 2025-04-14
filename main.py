@@ -68,9 +68,9 @@ def main():
     if args.pe_type == 'polynomial_rpe':
         model_kwargs['polynomial_degree'] = args.polynomial_degree
 
-    if args.pe_type in ['rpe', 'polynomial_rpe']:
-        model_kwargs['img_size'] = args.img_size
-        model_kwargs['patch_size'] = args.patch_size
+    # if args.pe_type in ['rpe', 'polynomial_rpe']:
+    #     model_kwargs['img_size'] = args.img_size
+    #     model_kwargs['patch_size'] = args.patch_size
     
     model = create_vit_model(
         pe_type=args.pe_type,
