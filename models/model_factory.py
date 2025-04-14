@@ -188,7 +188,9 @@ def create_vit_model(
                 qkv_bias=qkv_bias,
                 qk_scale=None,
                 attn_drop=attn_drop_rate,
-                proj_drop=drop_rate
+                proj_drop=drop_rate,
+                img_size=img_size,
+                patch_size=patch_size
             )
         
         return model
@@ -228,7 +230,9 @@ def create_vit_model(
                 qk_scale=None,
                 attn_drop=attn_drop_rate,
                 proj_drop=drop_rate,
-                polynomial_degree=polynomial_degree
+                polynomial_degree=polynomial_degree,
+                img_size=img_size,
+                patch_size=patch_size
             )
         
         return model
