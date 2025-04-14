@@ -31,7 +31,7 @@ Parts of this code are based on the following repositories:
  ┃ ┃ ┣ 📜 __init__.py         # Package initialization with imports
  ┃ ┃ ┣ 📜 Poly_RPE.py         # Polynomial RPE based on L1 distances
  ┃ ┃ ┣ 📜 RPE.py              # Standard RPE with 2L-1 learnable parameters 
- ┃ ┃ ┗ 📜 RoPE.py             # Interface to RoPE variants
+ ┃ ┃ ┗ 📜 fixed_rope_mixed.py # RoPE variants, adapted, reduced patch size
  ┃ ┣ 📜 model_factory.py      # Factory for creating ViT variants with different PEs
  ┃ ┗ 📜 vit_base.py           # Base ViT implementation
  ┃
@@ -39,7 +39,7 @@ Parts of this code are based on the following repositories:
  ┃ ┗ 📜 trainer.py            # Training and evaluation loops
  ┃
  ┣ 📂 utils                   # Utility functions
- ┃ ┗ 📜 data.py               # CIFAR-10 data loading and preprocessing
+ ┃ ┗ 📜 data.py               # CIFAR-10 data fetch, augment, split
  ┃
  ┣ 📂 rope-vit                # External RoPE implementation (from Heo et al.): https://github.com/naver-ai/rope-vit
  ┃ ┣ 📂 models                # Original RoPE implementations
