@@ -41,9 +41,13 @@ def parse_args():
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
 
-    # Add to the training parameters section in parse_args()
+    # Add MixUp parameter
     parser.add_argument('--mixup_alpha', type=float, default=0.2, 
                     help='Alpha parameter for mixup augmentation (0 to disable)')
+    
+    # Add learning rate decay
+    parser.add_argument('--lr_decay_factor', type=float, default=0.8, 
+                    help='Factor to slow down the learning rate decay (lower = slower decay)')
     
     return parser.parse_args()
 
@@ -98,7 +102,7 @@ def main():
     )
     
     # Set up learning rate scheduler with warmup
-    def warmup_cosine_schedule(optimizer, warmup_epochs, total_epochs, min_lr=1e-6):
+    def warmup_cosine_schedule(optimizer, warmup_epochs, total_epochs, lr_decay_factor=0.8, min_lr=1e-6):
         def lr_lambda(epoch):
             if epoch < warmup_epochs:
                 # Linear warmup
@@ -106,8 +110,8 @@ def main():
             else:
                 # Cosine annealing with slower decay
                 progress = float(epoch - warmup_epochs) / float(max(1, total_epochs - warmup_epochs))
-                # Multiply by 0.8 to slow down the decay rate
-                progress = progress * 0.8
+                # Multiply by factor (default 0.8) to slow down the decay rate
+                progress = progress * lr_decay_factor
                 return max(min_lr, 0.5 * (1.0 + np.cos(np.pi * progress)))
         
         return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
@@ -115,7 +119,8 @@ def main():
     scheduler = warmup_cosine_schedule(
         optimizer, 
         warmup_epochs=args.warmup_epochs, 
-        total_epochs=args.epochs
+        total_epochs=args.epochs,
+        lr_decay_factor=args.lr_decay_factor
     )
     
     # Train model
