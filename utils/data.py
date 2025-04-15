@@ -15,13 +15,23 @@ def get_cifar10_dataloaders(batch_size=128, num_workers=4, val_split=0.1):
     Returns:
         train_loader, val_loader, test_loader
     """
-    # Data augmentation and normalization for training
+    # # Data augmentation and normalization for training
+    # train_transform = transforms.Compose([
+    #     transforms.RandomCrop(32, padding=4),
+    #     transforms.RandomHorizontalFlip(),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    # ])
+
     train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
+    # New augmentations:
+    transforms.RandomErasing(p=0.2),  # Removes random rectangular patches
+    transforms.ColorJitter(brightness=0.1, contrast=0.1),  # Slight color variations
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+])
     
     # Just normalization for validation and testing
     test_transform = transforms.Compose([
