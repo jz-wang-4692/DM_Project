@@ -86,7 +86,7 @@ def main():
     model = model.to(device)
     
     # Set up loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1) # Add Label Smoothing
     optimizer = optim.AdamW(
         model.parameters(),
         lr=args.lr,
@@ -100,8 +100,10 @@ def main():
                 # Linear warmup
                 return float(epoch) / float(max(1, warmup_epochs))
             else:
-                # Cosine annealing
+                # Cosine annealing with slower decay
                 progress = float(epoch - warmup_epochs) / float(max(1, total_epochs - warmup_epochs))
+                # Multiply by 0.8 to slow down the decay rate
+                progress = progress * 0.8
                 return max(min_lr, 0.5 * (1.0 + np.cos(np.pi * progress)))
         
         return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
