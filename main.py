@@ -40,6 +40,10 @@ def parse_args():
                         help='Device to train on')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
+
+    # Add to the training parameters section in parse_args()
+    parser.add_argument('--mixup_alpha', type=float, default=0.2, 
+                    help='Alpha parameter for mixup augmentation (0 to disable)')
     
     return parser.parse_args()
 
@@ -124,7 +128,8 @@ def main():
         optimizer=optimizer,
         scheduler=scheduler,
         num_epochs=args.epochs,
-        device=device
+        device=device,
+        mixup_alpha=args.mixup_alpha
     )
     
     # Evaluate on test set
