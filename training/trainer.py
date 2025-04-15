@@ -2,8 +2,24 @@ import torch
 import time
 import copy
 from tqdm import tqdm
+import numpy as np
 
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
+# Add mixup
+def mixup_data(x, y, alpha=0.2):
+    '''Returns mixed inputs and targets'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    index = torch.randperm(batch_size).to(x.device)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+def train_one_epoch(model, dataloader, criterion, optimizer, device, mixup_alpha=0.2):
     """Train the model for one epoch."""
     model.train()
     running_loss = 0.0
@@ -16,21 +32,42 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device):
         inputs = inputs.to(device)
         labels = labels.to(device)
         
+        # Apply mixup
+        if mixup_alpha > 0:
+            inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, alpha=mixup_alpha)
+        
         # Zero the parameter gradients
         optimizer.zero_grad()
         
         # Forward pass
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
         
-        # Backward pass and optimize
+        # Calculate loss with mixup if applied
+        if mixup_alpha > 0:
+            loss = lam * criterion(outputs, labels_a) + (1 - lam) * criterion(outputs, labels_b)
+        else:
+            loss = criterion(outputs, labels)
+        
+        # Backward pass
         loss.backward()
+        
+        # Add gradient clipping
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
+        # Optimize
         optimizer.step()
         
         # Statistics
         _, preds = torch.max(outputs, 1)
         running_loss += loss.item() * inputs.size(0)
-        running_corrects += torch.sum(preds == labels.data).item()
+        
+        # For accuracy calculation with mixup
+        if mixup_alpha > 0:
+            # For mixup, use weighted accuracy of both targets
+            running_corrects += (lam * torch.sum(preds == labels_a.data).item() + 
+                              (1 - lam) * torch.sum(preds == labels_b.data).item())
+        else:
+            running_corrects += torch.sum(preds == labels.data).item()
         
         # Update progress bar
         pbar.set_postfix({"loss": loss.item()})
@@ -66,7 +103,7 @@ def evaluate(model, dataloader, criterion, device):
     return epoch_loss, epoch_acc
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler=None, 
-                num_epochs=100, device='cuda'):
+                num_epochs=100, device='cuda', mixup_alpha=0.2):
     """
     Train and evaluate a model.
     
@@ -79,6 +116,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         scheduler: Learning rate scheduler (optional)
         num_epochs: Number of training epochs
         device: Device to train on
+        mixup_alpha: Alpha parameter for mixup augmentation (0 to disable)
         
     Returns:
         model: Best model based on validation accuracy
@@ -104,7 +142,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         
         # Train phase
         train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, device
+            model, train_loader, criterion, optimizer, device, mixup_alpha
         )
         
         # Update learning rate
