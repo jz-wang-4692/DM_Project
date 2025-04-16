@@ -16,6 +16,7 @@ from pathlib import Path
 
 from functools import partial
 from timm.models.vision_transformer import _cfg
+import types
 
 # In model_factory.py, add import
 from models.positional_encoding.fixed_rope_mixed import FixedRoPEMixedModel, fixed_apply_rotary_emb
@@ -36,6 +37,18 @@ from models.vit_rope import (
 from models.positional_encoding.RPE import RelativePositionalAttention
 from models.positional_encoding.Poly_RPE import PolynomialPositionalAttention
 
+def disable_ape_keep_cls(model):
+    # 去掉 APE 参数
+    model.pos_embed = None
+
+    # 自定义 _pos_embed：保留 CLS，不加 APE
+    def custom_pos_embed(self, x):
+        if self.cls_token is not None:
+            cls_tokens = self.cls_token.expand(x.shape[0], -1, -1)
+            x = torch.cat((cls_tokens, x), dim=1)
+        return self.pos_drop(x)  # 不加 pos_embed
+
+    model._pos_embed = types.MethodType(custom_pos_embed, model)
 
 def create_vit_model(
     pe_type,
@@ -195,6 +208,45 @@ def create_vit_model(
         
         return model
     
+    elif pe_type == 'rpe_only':
+        # Create a ViT with custom RPE attention
+        model = timm.create_model(
+            'vit_small_patch16_224',
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_channels,
+            num_classes=num_classes,
+            embed_dim=embed_dim,
+            depth=depth,
+            num_heads=num_heads,
+            mlp_ratio=mlp_ratio,
+            qkv_bias=qkv_bias,
+            drop_rate=drop_rate,
+            attn_drop_rate=attn_drop_rate,
+            pretrained=False
+        )
+        
+        # For CIFAR-10, adjust patch embedding if needed
+        if img_size != 224:
+            model.patch_embed.proj = nn.Conv2d(
+                in_channels, embed_dim, kernel_size=patch_size, stride=patch_size
+            )
+        
+        # Replace attention with RPE attention
+        for i, block in enumerate(model.blocks):
+            block.attn = RelativePositionalAttention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_drop_rate,
+                proj_drop=drop_rate,
+                img_size=img_size,
+                patch_size=patch_size
+            )
+        disable_ape_keep_cls(model)
+        return model
+    
     elif pe_type == 'polynomial_rpe':
         # Create a ViT with Polynomial RPE attention
         polynomial_degree = kwargs.get('polynomial_degree', 3)
@@ -235,6 +287,49 @@ def create_vit_model(
                 patch_size=patch_size
             )
         
+        return model
+    
+    elif pe_type == 'polynomial_rpe_only':
+        # Create a ViT with Polynomial RPE attention
+        polynomial_degree = kwargs.get('polynomial_degree', 3)
+        
+        model = timm.create_model(
+            'vit_small_patch16_224',
+            img_size=img_size,
+            patch_size=patch_size,
+            in_chans=in_channels,
+            num_classes=num_classes,
+            embed_dim=embed_dim,
+            depth=depth,
+            num_heads=num_heads,
+            mlp_ratio=mlp_ratio,
+            qkv_bias=qkv_bias,
+            drop_rate=drop_rate,
+            attn_drop_rate=attn_drop_rate,
+            pretrained=False
+        )
+        
+        # For CIFAR-10, adjust patch embedding if needed
+        if img_size != 224:
+            model.patch_embed.proj = nn.Conv2d(
+                in_channels, embed_dim, kernel_size=patch_size, stride=patch_size
+            )
+        
+        # Replace attention with Polynomial RPE attention
+        for i, block in enumerate(model.blocks):
+            block.attn = PolynomialPositionalAttention(
+                dim=embed_dim,
+                num_heads=num_heads,
+                qkv_bias=qkv_bias,
+                qk_scale=None,
+                attn_drop=attn_drop_rate,
+                proj_drop=drop_rate,
+                polynomial_degree=polynomial_degree,
+                img_size=img_size,
+                patch_size=patch_size
+            )
+            
+        disable_ape_keep_cls(model)
         return model
     
     else:

@@ -17,7 +17,7 @@ def parse_args():
     
     # Model parameters
     parser.add_argument('--pe_type', type=str, default='ape',
-                        choices=['ape', 'rope_axial', 'rope_mixed', 'rpe', 'polynomial_rpe'],
+                        choices=['ape', 'rope_axial', 'rope_mixed', 'rpe', 'polynomial_rpe','rpe_only','polynomial_rpe_only'],
                         help='Type of positional encoding')
     parser.add_argument('--img_size', type=int, default=32, help='Input image size')
     parser.add_argument('--patch_size', type=int, default=4, help='Patch size')
