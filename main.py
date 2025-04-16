@@ -12,6 +12,62 @@ from models.model_factory import create_vit_model
 from utils.data import get_cifar10_dataloaders
 from training.trainer import train_model, evaluate
 
+import json
+from datetime import datetime
+
+def count_parameters(model):
+    """Count the number of trainable parameters in a model"""
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def count_pe_parameters(model, pe_type):
+    """Count parameters specific to the positional encoding method"""
+    pe_params = 0
+    
+    if pe_type == 'ape':
+        # APE uses a single positional embedding table (excluding cls token embedding)
+        if hasattr(model, 'pos_embed'):
+            # Standard format is (1, num_patches + 1, embed_dim) where +1 is for cls token
+            # Subtract the cls token parameters
+            pe_params = model.pos_embed.numel() - model.pos_embed.shape[-1]
+    
+    elif pe_type == 'rpe':
+        # For standard RPE: Find parameters in RelativePositionalAttention blocks
+        for name, module in model.named_modules():
+            if 'attn' in name and hasattr(module, 'relative_position_bias_table'):
+                pe_params += module.relative_position_bias_table.numel()
+    
+    elif pe_type == 'polynomial_rpe':
+        # For Polynomial RPE: Find polynomial coefficients
+        for name, module in model.named_modules():
+            if 'attn' in name and hasattr(module, 'poly_coeffs'):
+                pe_params += module.poly_coeffs.numel()
+    
+    elif pe_type in ['rope_axial', 'rope_mixed']:
+        # RoPE often doesn't have additional parameters as it uses fixed rotations
+        # If there are any learnable parameters in RoPE implementation, they would be counted here
+        for name, module in model.named_modules():
+            if 'rope' in name.lower() and any(p.requires_grad for p in module.parameters()):
+                pe_params += sum(p.numel() for p in module.parameters() if p.requires_grad)
+    
+    return pe_params
+
+def save_config_and_results(config, history, model_info, output_dir):
+    """Save configuration, training history, and model information to JSON files"""
+    # Save configuration
+    config_file = output_dir / 'config.json'
+    with open(config_file, 'w') as f:
+        json.dump(vars(config), f, indent=4)
+    
+    # Save training history
+    history_file = output_dir / 'training_history.json'
+    with open(history_file, 'w') as f:
+        json.dump(history, f, indent=4)
+    
+    # Save model information
+    model_info_file = output_dir / 'model_info.json'
+    with open(model_info_file, 'w') as f:
+        json.dump(model_info, f, indent=4)
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Train and evaluate ViT with different positional encodings on CIFAR-10')
     
@@ -92,7 +148,28 @@ def main():
         **model_kwargs
     )
     model = model.to(device)
-    
+
+    # After creating the model:
+    total_params = count_parameters(model)
+    pe_params = count_pe_parameters(model, args.pe_type)
+
+    print(f"Model has {total_params:,} total trainable parameters")
+    print(f"Positional encoding '{args.pe_type}' uses {pe_params:,} parameters ({pe_params/total_params*100:.2f}% of total)")
+
+    # Create model info dictionary
+    model_info = {
+        "pe_type": args.pe_type,
+        "total_parameters": total_params,
+        "pe_parameters": pe_params,
+        "pe_percentage": pe_params/total_params*100,
+        "img_size": args.img_size,
+        "patch_size": args.patch_size,
+        "embed_dim": args.embed_dim,
+        "depth": args.depth,
+        "num_heads": args.num_heads,
+        "timestamp": datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    }
+        
     # Set up loss function and optimizer
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1) # Add Label Smoothing
     optimizer = optim.AdamW(

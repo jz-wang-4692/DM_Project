@@ -124,12 +124,15 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
     """
     since = time.time()
     
-    # Initialize history dictionary
+    # Enhanced history dictionary
     history = {
         'train_loss': [],
         'train_acc': [],
         'val_loss': [],
-        'val_acc': []
+        'val_acc': [],
+        'lr': [],          # Track learning rates
+        'epoch_times': [], # Track time per epoch
+        'detailed_epochs': []  # Detailed per-epoch information
     }
     
     # Initialize best model and metrics
@@ -140,6 +143,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         print(f'Epoch {epoch+1}/{num_epochs}')
         print('-' * 10)
         
+        epoch_start_time = time.time()
+        
         # Train phase
         train_loss, train_acc = train_one_epoch(
             model, train_loader, criterion, optimizer, device, mixup_alpha
@@ -149,19 +154,40 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         if scheduler is not None:
             scheduler.step()
         
+        # Get current learning rate
+        current_lr = optimizer.param_groups[0]['lr']
+        
         # Evaluation phase
         val_loss, val_acc = evaluate(
             model, val_loader, criterion, device
         )
         
-        # Save history
+        # Calculate epoch time
+        epoch_time = time.time() - epoch_start_time
+        
+        # Save history with more details
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
         history['val_loss'].append(val_loss)
         history['val_acc'].append(val_acc)
+        history['lr'].append(current_lr)
+        history['epoch_times'].append(epoch_time)
+        
+        # Detailed epoch info
+        epoch_info = {
+            'epoch': epoch + 1,
+            'train_loss': train_loss,
+            'train_acc': train_acc,
+            'val_loss': val_loss,
+            'val_acc': val_acc,
+            'lr': current_lr,
+            'time_seconds': epoch_time,
+        }
+        history['detailed_epochs'].append(epoch_info)
         
         print(f'Train Loss: {train_loss:.4f} Acc: {train_acc:.4f}')
         print(f'Val Loss: {val_loss:.4f} Acc: {val_acc:.4f}')
+        print(f'LR: {current_lr:.6f} Time: {epoch_time:.2f}s')
         
         # Save best model
         if val_acc > best_acc:
@@ -173,6 +199,10 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
     time_elapsed = time.time() - since
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:.4f}')
+    
+    # Add total training time to history
+    history['total_training_time'] = time_elapsed
+    history['best_val_acc'] = best_acc
     
     # Load best model weights
     model.load_state_dict(best_model_wts)
