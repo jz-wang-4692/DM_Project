@@ -11,6 +11,7 @@ from pathlib import Path
 from models.model_factory import create_vit_model
 from utils.data import get_cifar10_dataloaders
 from training.trainer import train_model, evaluate
+from config.default_config import create_argparser, get_config, get_flat_config, save_config
 
 import json
 from datetime import datetime
@@ -56,7 +57,7 @@ def save_config_and_results(config, history, model_info, output_dir):
     # Save configuration
     config_file = output_dir / 'config.json'
     with open(config_file, 'w') as f:
-        json.dump(vars(config), f, indent=4)
+        json.dump(config, f, indent=4)
     
     # Save training history
     history_file = output_dir / 'training_history.json'
@@ -68,114 +69,90 @@ def save_config_and_results(config, history, model_info, output_dir):
     with open(model_info_file, 'w') as f:
         json.dump(model_info, f, indent=4)
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Train and evaluate ViT with different positional encodings on CIFAR-10')
-    
-    # Model parameters
-    parser.add_argument('--pe_type', type=str, default='ape',
-                        choices=['ape', 'rope_axial', 'rope_mixed', 'rpe', 'polynomial_rpe'],
-                        help='Type of positional encoding')
-    parser.add_argument('--img_size', type=int, default=32, help='Input image size')
-    parser.add_argument('--patch_size', type=int, default=4, help='Patch size')
-    parser.add_argument('--embed_dim', type=int, default=192, help='Embedding dimension')
-    parser.add_argument('--depth', type=int, default=9, help='Transformer depth')
-    parser.add_argument('--num_heads', type=int, default=8, help='Number of attention heads')
-    parser.add_argument('--mlp_ratio', type=float, default=4.0, help='MLP hidden dim ratio')
-    parser.add_argument('--drop_rate', type=float, default=0.1, help='Dropout rate')
-    parser.add_argument('--polynomial_degree', type=int, default=3, help='Degree for polynomial RPE')
-    
-    # Training parameters
-    parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
-    parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--lr', type=float, default=0.0005, help='Learning rate')
-    parser.add_argument('--weight_decay', type=float, default=0.05, help='Weight decay')
-    parser.add_argument('--warmup_epochs', type=int, default=5, help='Warmup epochs')
-    
-    # Other parameters
-    parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu',
-                        help='Device to train on')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
-    parser.add_argument('--output_dir', type=str, default='./output', help='Output directory')
-
-    # Add MixUp parameter
-    parser.add_argument('--mixup_alpha', type=float, default=0.2, 
-                    help='Alpha parameter for mixup augmentation (0 to disable)')
-    
-    # Add learning rate decay
-    parser.add_argument('--lr_decay_factor', type=float, default=0.8, 
-                    help='Factor to slow down the learning rate decay (lower = slower decay)')
-    
-    return parser.parse_args()
-
 def main():
-    args = parse_args()
+    # Parse command-line arguments
+    parser = create_argparser()
+    args = parser.parse_args()
     
-    # Create output directory
-    output_dir = Path(args.output_dir) / args.pe_type
+    # Get configuration (combining defaults, config file, and command-line args)
+    nested_config = get_config(args.config_file, args)
+    
+    # Convert to flat dictionary for easier access
+    config = get_flat_config(nested_config)
+    
+    # Save the full configuration at the start of training
+    output_dir = Path(config['output_dir']) / config['pe_type']
     output_dir.mkdir(parents=True, exist_ok=True)
+    save_config(nested_config, output_dir / 'full_config.json')
     
     # Set device
-    device = torch.device(args.device)
+    device = torch.device(config['device'])
     print(f"Using device: {device}")
+    
+    # Set random seed for reproducibility
+    torch.manual_seed(config['seed'])
+    np.random.seed(config['seed'])
     
     # Load data
     print("Loading CIFAR-10 dataset...")
     train_loader, val_loader, test_loader = get_cifar10_dataloaders(
-        batch_size=args.batch_size,
-        num_workers=args.num_workers
+        batch_size=config['batch_size'],
+        num_workers=config['num_workers'],
+        aug_params={
+            'random_crop_padding': config['random_crop_padding'],
+            'random_erasing_prob': config['random_erasing_prob'],
+            'color_jitter_brightness': config['color_jitter_brightness'],
+            'color_jitter_contrast': config['color_jitter_contrast']
+        }
     )
     print(f"Train: {len(train_loader.dataset)} images, Val: {len(val_loader.dataset)} images, Test: {len(test_loader.dataset)} images")
     
     # Create model with appropriate positional encoding
-    print(f"Creating model with {args.pe_type} positional encoding...")
+    print(f"Creating model with {config['pe_type']} positional encoding...")
     model_kwargs = {}
-    if args.pe_type == 'polynomial_rpe':
-        model_kwargs['polynomial_degree'] = args.polynomial_degree
-
-    # if args.pe_type in ['rpe', 'polynomial_rpe']:
-    #     model_kwargs['img_size'] = args.img_size
-    #     model_kwargs['patch_size'] = args.patch_size
+    if config['pe_type'] == 'polynomial_rpe':
+        model_kwargs['polynomial_degree'] = config['polynomial_degree']
     
     model = create_vit_model(
-        pe_type=args.pe_type,
-        img_size=args.img_size,
-        patch_size=args.patch_size,
-        embed_dim=args.embed_dim,
-        depth=args.depth,
-        num_heads=args.num_heads,
-        mlp_ratio=args.mlp_ratio,
-        drop_rate=args.drop_rate,
+        pe_type=config['pe_type'],
+        img_size=config['img_size'],
+        patch_size=config['patch_size'],
+        embed_dim=config['embed_dim'],
+        depth=config['depth'],
+        num_heads=config['num_heads'],
+        mlp_ratio=config['mlp_ratio'],
+        drop_rate=config['drop_rate'],
         **model_kwargs
     )
     model = model.to(device)
 
-    # After creating the model:
+    # Count parameters
     total_params = count_parameters(model)
-    pe_params = count_pe_parameters(model, args.pe_type)
+    pe_params = count_pe_parameters(model, config['pe_type'])
 
     print(f"Model has {total_params:,} total trainable parameters")
-    print(f"Positional encoding '{args.pe_type}' uses {pe_params:,} parameters ({pe_params/total_params*100:.2f}% of total)")
+    print(f"Positional encoding '{config['pe_type']}' uses {pe_params:,} parameters ({pe_params/total_params*100:.2f}% of total)")
 
     # Create model info dictionary
     model_info = {
-        "pe_type": args.pe_type,
+        "pe_type": config['pe_type'],
         "total_parameters": total_params,
         "pe_parameters": pe_params,
         "pe_percentage": pe_params/total_params*100,
-        "img_size": args.img_size,
-        "patch_size": args.patch_size,
-        "embed_dim": args.embed_dim,
-        "depth": args.depth,
-        "num_heads": args.num_heads,
+        "img_size": config['img_size'],
+        "patch_size": config['patch_size'],
+        "embed_dim": config['embed_dim'],
+        "depth": config['depth'],
+        "num_heads": config['num_heads'],
         "timestamp": datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     }
         
     # Set up loss function and optimizer
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1) # Add Label Smoothing
+    criterion = nn.CrossEntropyLoss(label_smoothing=config['label_smoothing'])
     optimizer = optim.AdamW(
         model.parameters(),
-        lr=args.lr,
-        weight_decay=args.weight_decay
+        lr=config['lr'],
+        weight_decay=config['weight_decay']
     )
     
     # Set up learning rate scheduler with warmup
@@ -187,7 +164,7 @@ def main():
             else:
                 # Cosine annealing with slower decay
                 progress = float(epoch - warmup_epochs) / float(max(1, total_epochs - warmup_epochs))
-                # Multiply by factor (default 0.8) to slow down the decay rate
+                # Multiply by factor to slow down the decay rate
                 progress = progress * lr_decay_factor
                 return max(min_lr, 0.5 * (1.0 + np.cos(np.pi * progress)))
         
@@ -195,13 +172,13 @@ def main():
     
     scheduler = warmup_cosine_schedule(
         optimizer, 
-        warmup_epochs=args.warmup_epochs, 
-        total_epochs=args.epochs,
-        lr_decay_factor=args.lr_decay_factor
+        warmup_epochs=config['warmup_epochs'], 
+        total_epochs=config['epochs'],
+        lr_decay_factor=config['lr_decay_factor']
     )
     
     # Train model
-    print(f"Training for {args.epochs} epochs...")
+    print(f"Training for {config['epochs']} epochs...")
     model, history = train_model(
         model=model,
         train_loader=train_loader,
@@ -209,15 +186,19 @@ def main():
         criterion=criterion,
         optimizer=optimizer,
         scheduler=scheduler,
-        num_epochs=args.epochs,
+        num_epochs=config['epochs'],
         device=device,
-        mixup_alpha=args.mixup_alpha
+        mixup_alpha=config['mixup_alpha']
     )
     
     # Evaluate on test set
     print("Evaluating on test set...")
     test_loss, test_acc = evaluate(model, test_loader, criterion, device)
     print(f"Test accuracy: {test_acc:.4f}")
+    
+    # Add test results to model_info
+    model_info["test_accuracy"] = test_acc
+    model_info["test_loss"] = test_loss
     
     # Save model
     torch.save(model.state_dict(), output_dir / 'model.pth')
@@ -232,7 +213,7 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.legend()
-    plt.title(f'{args.pe_type} Accuracy')
+    plt.title(f'{config["pe_type"]} Accuracy')
     
     # Plot training and validation loss
     plt.subplot(1, 2, 2)
@@ -241,21 +222,24 @@ def main():
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.title(f'{args.pe_type} Loss')
+    plt.title(f'{config["pe_type"]} Loss')
     
     plt.tight_layout()
     plt.savefig(output_dir / 'training_history.png')
     
     # Save results summary
     with open(output_dir / 'results.txt', 'w') as f:
-        f.write(f"Model: Vision Transformer with {args.pe_type}\n")
-        f.write(f"Embedding dimension: {args.embed_dim}\n")
-        f.write(f"Depth: {args.depth}\n")
-        f.write(f"Number of heads: {args.num_heads}\n")
-        f.write(f"Training epochs: {args.epochs}\n")
+        f.write(f"Model: Vision Transformer with {config['pe_type']}\n")
+        f.write(f"Embedding dimension: {config['embed_dim']}\n")
+        f.write(f"Depth: {config['depth']}\n")
+        f.write(f"Number of heads: {config['num_heads']}\n")
+        f.write(f"Training epochs: {config['epochs']}\n")
         f.write(f"Final training accuracy: {history['train_acc'][-1]:.4f}\n")
         f.write(f"Final validation accuracy: {history['val_acc'][-1]:.4f}\n")
         f.write(f"Test accuracy: {test_acc:.4f}\n")
+    
+    # Save full configuration and results
+    save_config_and_results(nested_config, history, model_info, output_dir)
     
     print(f"Results saved to {output_dir}")
 
