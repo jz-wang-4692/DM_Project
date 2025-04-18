@@ -73,7 +73,7 @@ def objective(trial, pe_type, output_dir):
     trial_dir = Path(output_dir) / f"trial_{trial.number}"
     trial_dir.mkdir(parents=True, exist_ok=True)
     
-    # CRITICAL FIX: Set the output directory in the config to match trial_dir
+    # Set the output directory in the config to match trial_dir
     params['output_dir'] = str(trial_dir)
     
     # Save trial configuration
@@ -85,25 +85,17 @@ def objective(trial, pe_type, output_dir):
         sys.executable, 
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "main.py"),
         f"--config_file={config_path}",
-        # No need to specify output_dir again as it's now in the config file
     ]
     
     # Run the training process
     logger.info(f"Starting trial {trial.number} with parameters: {params}")
-    logger.info(f"Running command: {' '.join(cmd)}")
+    
     try:
-        process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Added Debug Logging
-        stdout = process.stdout.decode('utf-8')
-        stderr = process.stderr.decode('utf-8')
-        logger.debug(f"Command stdout: {stdout}")
-        if stderr:
-            logger.warning(f"Command stderr: {stderr}")
+        # Run without capturing output to show real-time progress
+        process = subprocess.run(cmd, check=True)
         
-        # Check if output directory contains expected files
-        logger.info(f"Files in trial dir: {list(trial_dir.glob('*'))}")
-        # Debug Logging
+        # Log files produced
+        logger.info(f"Trial {trial.number} completed. Files generated: {[f.name for f in trial_dir.glob('*')]}")
         
         # Parse output to get validation accuracy
         results_file = trial_dir / "results.txt"
@@ -142,6 +134,7 @@ def objective(trial, pe_type, output_dir):
                     with open(trial_dir / "trial_summary.json", "w") as f:
                         json.dump(trial_summary, f, indent=4)
                     
+                    logger.info(f"Trial {trial.number} achieved validation accuracy: {val_acc:.4f}")
                     return val_acc
         
         # If validation accuracy can't be found, return a poor score
@@ -150,8 +143,6 @@ def objective(trial, pe_type, output_dir):
         
     except subprocess.CalledProcessError as e:
         logger.error(f"Trial {trial.number} failed with error: {e}")
-        stderr_output = e.stderr.decode('utf-8')
-        logger.error(f"Stderr: {stderr_output}")
         return 0.0
 
 def run_optimization(args):
