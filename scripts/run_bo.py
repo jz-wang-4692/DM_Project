@@ -1,6 +1,10 @@
 """
 Script to run Bayesian Optimization for all positional encoding types.
 """
+import os
+import sys
+# Add project root to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import subprocess
@@ -61,9 +65,10 @@ def main():
         # Create study name
         study_name = f"{pe_type}_optimization"
         
-        # Build command to run scripts/bo_main.py (updated path)
+        # Build command with correct path to bo_main.py script
         cmd = [
-            "python", "scripts/bo_main.py",  # Updated to use scripts/ directory
+            sys.executable,  # Use current Python interpreter
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "bo_main.py"),
             f"--pe_type={pe_type}",
             f"--n_trials={args.n_trials}",
             f"--study_name={study_name}",

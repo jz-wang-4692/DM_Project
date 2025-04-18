@@ -5,6 +5,9 @@ Uses Optuna to optimize hyperparameters for each positional encoding type.
 
 import os
 import sys
+# Add project root to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import json
 import optuna
 import argparse
@@ -15,6 +18,7 @@ import logging
 from datetime import datetime
 import pandas as pd
 from collections import defaultdict
+import torch
 
 # Project imports
 from config.search_spaces import SearchSpaces
@@ -61,9 +65,16 @@ def objective(trial, pe_type, output_dir):
     for param, value in constraint_updates.items():
         params[param] = value
     
+    # Make sure device is properly set
+    if 'device' not in params or params['device'] is None:
+        params['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
     # Create trial directory
     trial_dir = Path(output_dir) / f"trial_{trial.number}"
     trial_dir.mkdir(parents=True, exist_ok=True)
+    
+    # CRITICAL FIX: Set the output directory in the config to match trial_dir
+    params['output_dir'] = str(trial_dir)
     
     # Save trial configuration
     config_path = trial_dir / "config.json"
@@ -71,15 +82,28 @@ def objective(trial, pe_type, output_dir):
     
     # Prepare command to run main.py with this configuration
     cmd = [
-        sys.executable, "main.py",
+        sys.executable, 
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "main.py"),
         f"--config_file={config_path}",
-        f"--output_dir={trial_dir}"
+        # No need to specify output_dir again as it's now in the config file
     ]
     
     # Run the training process
     logger.info(f"Starting trial {trial.number} with parameters: {params}")
+    logger.info(f"Running command: {' '.join(cmd)}")
     try:
         process = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Added Debug Logging
+        stdout = process.stdout.decode('utf-8')
+        stderr = process.stderr.decode('utf-8')
+        logger.debug(f"Command stdout: {stdout}")
+        if stderr:
+            logger.warning(f"Command stderr: {stderr}")
+        
+        # Check if output directory contains expected files
+        logger.info(f"Files in trial dir: {list(trial_dir.glob('*'))}")
+        # Debug Logging
         
         # Parse output to get validation accuracy
         results_file = trial_dir / "results.txt"
@@ -126,7 +150,8 @@ def objective(trial, pe_type, output_dir):
         
     except subprocess.CalledProcessError as e:
         logger.error(f"Trial {trial.number} failed with error: {e}")
-        logger.error(f"Stderr: {e.stderr.decode('utf-8')}")
+        stderr_output = e.stderr.decode('utf-8')
+        logger.error(f"Stderr: {stderr_output}")
         return 0.0
 
 def run_optimization(args):
@@ -213,8 +238,7 @@ def run_optimization(args):
     continuous_params = ['drop_rate', 'lr', 'weight_decay', 'mixup_alpha', 'label_smoothing']
     for param in continuous_params:
         try:
-            if hasattr(optuna.visualization.matplotlib, 'plot_slice'):
-                plot_slice(study, param, output_dir / f"{param}_slice.png")
+            plot_slice(study, param, output_dir / f"{param}_slice.png")
         except Exception as e:
             logger.warning(f"Could not generate slice plot for {param}: {e}")
     

@@ -78,16 +78,26 @@ def load_config(filepath):
     if not filepath.exists():
         raise FileNotFoundError(f"Config file not found: {filepath}")
     
-    if filepath.suffix == '.json':
-        with open(filepath, 'r') as f:
-            config = json.load(f)
-    elif filepath.suffix in ['.yaml', '.yml']:
-        with open(filepath, 'r') as f:
-            config = yaml.safe_load(f)
-    else:
-        raise ValueError(f"Unsupported file format: {filepath.suffix}")
+    try:
+        if filepath.suffix == '.json':
+            with open(filepath, 'r') as f:
+                config = json.load(f)
+        elif filepath.suffix in ['.yaml', '.yml']:
+            with open(filepath, 'r') as f:
+                config = yaml.safe_load(f)
+        else:
+            raise ValueError(f"Unsupported file format: {filepath.suffix}")
+        
+        # Ensure config is a dictionary
+        if not isinstance(config, dict):
+            raise ValueError(f"Config file does not contain a valid dictionary: {filepath}")
+            
+        return config
     
-    return config
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON in config file: {filepath}")
+    except Exception as e:
+        raise ValueError(f"Error loading config file {filepath}: {str(e)}")
 
 def get_config(filepath=None, args=None):
     """
@@ -139,9 +149,21 @@ def get_config(filepath=None, args=None):
 def get_flat_config(config):
     """Convert nested config dict to flat dict for easier access in main.py"""
     flat_config = {}
+    
+    # If config is already a flat dictionary, return it
+    if not any(isinstance(value, dict) for value in config.values()):
+        return config
+        
+    # Otherwise, flatten the nested structure
     for section, section_config in config.items():
+        # Skip if section_config is not a dictionary
+        if not isinstance(section_config, dict):
+            flat_config[section] = section_config
+            continue
+            
         for key, value in section_config.items():
             flat_config[key] = value
+            
     return flat_config
 
 def create_argparser():

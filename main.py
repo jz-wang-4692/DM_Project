@@ -81,7 +81,7 @@ def main():
     config = get_flat_config(nested_config)
     
     # Save the full configuration at the start of training
-    output_dir = Path(config['output_dir']) / config['pe_type']
+    output_dir = Path(config['output_dir'])
     output_dir.mkdir(parents=True, exist_ok=True)
     save_config(nested_config, output_dir / 'full_config.json')
     

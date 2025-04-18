@@ -4,6 +4,7 @@ This module defines parameter ranges and distributions for Optuna trials.
 """
 
 import optuna
+import torch
 
 class SearchSpaces:
     @staticmethod
@@ -68,6 +69,20 @@ class SearchSpaces:
         return params
     
     @staticmethod
+    def define_system_space():
+        """Define fixed system parameters"""
+        params = {}
+        
+        # System parameters
+        params['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
+        params['num_workers'] = 4
+        params['random_crop_padding'] = 4  # Fixed for CIFAR-10
+        params['output_dir'] = './output'  # Default output directory
+        params['seed'] = 42  # Default random seed
+        
+        return params
+    
+    @staticmethod
     def get_trial_params(trial, pe_type):
         """Get complete trial parameters for the given positional encoding type"""
         params = {
@@ -79,6 +94,7 @@ class SearchSpaces:
         params.update(SearchSpaces.define_model_space(trial, pe_type))
         params.update(SearchSpaces.define_regularization_space(trial))
         params.update(SearchSpaces.define_optimization_space(trial))
+        params.update(SearchSpaces.define_system_space())  # Add system parameters
         
         # Add fixed parameters
         params['mlp_ratio'] = 4.0  # Fixed MLP ratio
@@ -89,6 +105,8 @@ class SearchSpaces:
     @staticmethod
     def add_parameter_constraints(trial, pe_type):
         """Add constraints between parameters"""
+        constraints = {}
+        
         # Ensure number of heads divides embedding dimension evenly
         embed_dim = trial.params.get('embed_dim', 192)
         num_heads = trial.params.get('num_heads', 8)
@@ -97,6 +115,6 @@ class SearchSpaces:
             # Suggest closest valid number of heads
             valid_heads = [h for h in [4, 8, 12, 16] if embed_dim % h == 0]
             if valid_heads:
-                return {'num_heads': valid_heads[0]}
+                constraints['num_heads'] = valid_heads[0]
         
-        return {}
+        return constraints

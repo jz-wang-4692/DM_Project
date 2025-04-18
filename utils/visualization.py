@@ -595,3 +595,44 @@ def plot_overfitting_analysis(results, output_path=None):
         plt.close()
     else:
         plt.show()
+
+
+def plot_slice(study, param_name, output_path=None):
+    """
+    Create a slice plot for a parameter showing its effect on performance
+    
+    Args:
+        study: Optuna study
+        param_name: Parameter name to plot
+        output_path: Path to save the plot
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Gather data
+    param_values = []
+    objective_values = []
+    
+    for trial in study.trials:
+        if trial.state == optuna.trial.TrialState.COMPLETE and param_name in trial.params:
+            param_values.append(trial.params[param_name])
+            objective_values.append(trial.value)
+    
+    if not param_values:
+        return
+    
+    # Sort data by parameter value for line plot
+    sorted_indices = np.argsort(param_values)
+    sorted_param_values = [param_values[i] for i in sorted_indices]
+    sorted_objectives = [objective_values[i] for i in sorted_indices]
+    
+    # Plot the values
+    ax.plot(sorted_param_values, sorted_objectives, 'o-', color='blue', alpha=0.7)
+    
+    set_plot_style(ax, title=f'Parameter Slice: {param_name}', 
+                  xlabel=param_name, ylabel='Objective Value', legend=False)
+    
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.show()
