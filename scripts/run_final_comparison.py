@@ -23,6 +23,8 @@ import pandas as pd
 from collections import defaultdict
 import torch
 
+import matplotlib.pyplot as plt
+
 # Project imports
 from config.default_config import load_config, save_config
 from utils.data import get_cifar10_dataloaders
@@ -34,7 +36,9 @@ from utils.visualization import (
     plot_convergence_comparison,
     plot_parameter_efficiency,
     plot_configuration_heatmap,
-    plot_overfitting_analysis
+    plot_overfitting_analysis,
+    PE_TYPE_COLORS,
+    set_plot_style
 )
 
 # Configure logging
@@ -231,7 +235,7 @@ def train_and_evaluate(config, pe_type, seed, output_dir, args):
             num_epochs=args.num_epochs,
             device=args.device,
             mixup_alpha=config.get('mixup_alpha', 0.2),
-            early_stopping_patience=args.early_stopping_patience,
+            early_stopping_patience=config.get('early_stopping_patience', args.early_stopping_patience),
             early_stopping_delta=config.get('early_stopping_delta', 0.001),
             checkpoint_dir=str(checkpoint_dir)
         )

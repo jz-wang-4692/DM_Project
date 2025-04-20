@@ -50,6 +50,7 @@ DEFAULT_CONFIG = {
         "num_workers": 4,
         "output_dir": "./output",
         "seed": 42,
+        "checkpoint_dir": None,
     }
 }
 

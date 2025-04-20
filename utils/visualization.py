@@ -164,44 +164,89 @@ def plot_parameter_importances(study, output_path=None):
 
 
 def plot_param_vs_performance(study, param_name, output_path=None):
-    """Plot relationship between parameter value and performance"""
+    """Plot relationship between parameter value and performance (including pruned trials)"""
     # Extract parameter values and corresponding performances
     values = []
     scores = []
+    trial_states = []  # Track trial states for visualization
+    
     for trial in study.trials:
-        if trial.state == optuna.trial.TrialState.COMPLETE and param_name in trial.params:
-            values.append(trial.params[param_name])
-            scores.append(trial.value)
+        if param_name in trial.params:
+            # Include both COMPLETE and PRUNED trials
+            if trial.state == optuna.trial.TrialState.COMPLETE:
+                values.append(trial.params[param_name])
+                scores.append(trial.value)
+                trial_states.append("complete")
+            elif trial.state == optuna.trial.TrialState.PRUNED:
+                # For pruned trials, use best intermediate value if available
+                if trial.intermediate_values:
+                    values.append(trial.params[param_name])
+                    # Get the best value achieved before pruning
+                    best_value = max(trial.intermediate_values.values())
+                    scores.append(best_value)
+                    trial_states.append("pruned")
     
     if not values:
+        print(f"No data available for parameter {param_name}")
         return  # Skip if no data
     
     # Create figure
     fig, ax = plt.subplots(figsize=(10, 6))
     
     # For categorical parameters, do a boxplot instead
-    if isinstance(values[0], str) or isinstance(values[0], bool):
-        # Convert to DataFrame for categorical plotting
-        df = pd.DataFrame({'value': values, 'score': scores})
+    if values and (isinstance(values[0], str) or isinstance(values[0], bool)):
+        # Convert to DataFrame for categorical plotting with trial state information
+        df = pd.DataFrame({
+            'value': values, 
+            'score': scores, 
+            'state': trial_states
+        })
+        
+        # Different approach for categorical parameters
         sns.boxplot(x='value', y='score', data=df, ax=ax, palette='muted')
-        set_plot_style(ax, title=f'Impact of {param_name} on Model Performance', 
-                      xlabel=param_name, ylabel='Validation Accuracy', legend=False)
+        
+        # Add individual points for better visibility
+        sns.stripplot(x='value', y='score', data=df, ax=ax, 
+                      hue='state', dodge=True, alpha=0.7,
+                      palette={'complete': 'blue', 'pruned': 'red'})
     else:
-        # Scatter plot for numerical parameters
-        ax.scatter(values, scores, alpha=0.7)
+        # Create DataFrame for scatterplot
+        df = pd.DataFrame({
+            'value': values, 
+            'score': scores, 
+            'state': trial_states
+        })
         
-        # Add trend line
-        if len(values) > 2:
+        # Scatter plot for numerical parameters with different markers for trial states
+        complete_df = df[df['state'] == 'complete']
+        pruned_df = df[df['state'] == 'pruned']
+        
+        # Plot complete trials with normal markers
+        ax.scatter(complete_df['value'], complete_df['score'], 
+                  alpha=0.7, label='Complete Trials', color='blue')
+        
+        # Plot pruned trials with different markers
+        ax.scatter(pruned_df['value'], pruned_df['score'], 
+                  alpha=0.7, label='Pruned Trials', color='red', marker='x')
+        
+        # Add trend line (using only complete trials for more accurate trend)
+        if len(complete_df) > 2:
             try:
-                z = np.polyfit(values, scores, 1)
+                complete_values = complete_df['value'].values
+                complete_scores = complete_df['score'].values
+                z = np.polyfit(complete_values, complete_scores, 1)
                 p = np.poly1d(z)
-                x_sorted = sorted(values)
-                ax.plot(x_sorted, p(x_sorted), "r--", alpha=0.8)
-            except:
-                pass  # Skip trend line if it can't be calculated
-        
-        set_plot_style(ax, title=f'Impact of {param_name} on Model Performance', 
-                      xlabel=param_name, ylabel='Validation Accuracy', legend=False)
+                x_sorted = sorted(complete_values)
+                ax.plot(x_sorted, p(x_sorted), "b--", alpha=0.8, label='Trend (complete trials)')
+            except Exception as e:
+                print(f"Could not generate trend line: {e}")
+    
+    # Add legend if we have both types of trials
+    if 'pruned' in trial_states and 'complete' in trial_states:
+        ax.legend()
+    
+    set_plot_style(ax, title=f'Parameter {param_name} vs Performance', 
+                  xlabel=param_name, ylabel='Objective Value', legend=True)
     
     plt.tight_layout()
     

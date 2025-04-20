@@ -494,59 +494,101 @@ def generate_experiment_summary(study, output_dir):
 
 def analyze_parameter_sensitivity(study, output_dir):
     """Analyze sensitivity of model performance to different parameters"""
-    # Only consider completed trials
-    completed_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+    # Consider both completed and pruned trials
+    valid_trials = [t for t in study.trials if t.state in 
+                  [optuna.trial.TrialState.COMPLETE, optuna.trial.TrialState.PRUNED]]
     
-    if len(completed_trials) < 2:
+    if len(valid_trials) < 2:
+        logger.warning("Not enough trials for parameter sensitivity analysis")
         return  # Need at least 2 trials for analysis
     
     # Get all parameter names
     param_names = set()
-    for trial in completed_trials:
+    for trial in valid_trials:
         param_names.update(trial.params.keys())
     
     # Analyze each parameter
     sensitivity_analysis = {}
     
     for param_name in param_names:
-        # Group trials by parameter value
-        grouped_data = defaultdict(list)
-        
-        for trial in completed_trials:
-            if param_name in trial.params:
-                value = trial.params[param_name]
-                performance = trial.value
-                # Convert value to string if it's not a simple type
-                if not isinstance(value, (int, float, str, bool)):
-                    value = str(value)
-                grouped_data[value].append(performance)
-        
-        # Calculate statistics
-        param_stats = {
-            "unique_values": len(grouped_data),
-            "value_performance": {},
-            "overall_impact": None
-        }
-        
-        # Calculate mean performance for each value
-        for value, performances in grouped_data.items():
-            param_stats["value_performance"][value] = {
-                "mean": np.mean(performances),
-                "std": np.std(performances),
-                "min": min(performances),
-                "max": max(performances),
-                "count": len(performances)
+        try:
+            # Group trials by parameter value
+            grouped_data = defaultdict(list)
+            trial_states = defaultdict(list)  # Track states for each group
+            
+            for trial in valid_trials:
+                if param_name in trial.params:
+                    value = trial.params[param_name]
+                    
+                    # Get performance value based on trial state
+                    if trial.state == optuna.trial.TrialState.COMPLETE:
+                        performance = trial.value
+                        state = "complete"
+                    elif trial.state == optuna.trial.TrialState.PRUNED:
+                        # For pruned trials, use best intermediate value if available
+                        if trial.intermediate_values:
+                            performance = max(trial.intermediate_values.values())
+                            state = "pruned"
+                        else:
+                            continue  # Skip pruned trials with no intermediate values
+                    
+                    # Bin values appropriately based on type
+                    if isinstance(value, float):
+                        # Bin floating point values to 2 decimal places
+                        binned_value = round(value, 2)
+                        grouped_data[binned_value].append(performance)
+                        trial_states[binned_value].append(state)
+                    elif isinstance(value, (int, str, bool)):
+                        # Keep simple types as is
+                        grouped_data[value].append(performance)
+                        trial_states[value].append(state)
+                    else:
+                        # Convert complex types to string
+                        str_value = str(value)
+                        grouped_data[str_value].append(performance)
+                        trial_states[str_value].append(state)
+            
+            # Skip parameters with no data
+            if not grouped_data:
+                logger.warning(f"No valid data for parameter: {param_name}")
+                continue
+                
+            # Calculate statistics
+            param_stats = {
+                "unique_values": len(grouped_data),
+                "value_performance": {},
+                "overall_impact": None,
+                "completion_rates": {}  # Add completion rate statistics
             }
-        
-        # Calculate overall parameter impact (variation in mean performance)
-        if len(grouped_data) > 1:
-            mean_performances = [stats["mean"] for stats in param_stats["value_performance"].values()]
-            param_stats["overall_impact"] = {
-                "range": max(mean_performances) - min(mean_performances),
-                "std": np.std(mean_performances)
-            }
-        
-        sensitivity_analysis[param_name] = param_stats
+            
+            # Calculate mean performance and completion rates for each value
+            for value, performances in grouped_data.items():
+                states = trial_states[value]
+                completion_rate = states.count("complete") / len(states) if states else 0
+                
+                param_stats["value_performance"][value] = {
+                    "mean": np.mean(performances),
+                    "std": np.std(performances),
+                    "min": min(performances),
+                    "max": max(performances),
+                    "count": len(performances),
+                    "completion_rate": completion_rate
+                }
+                param_stats["completion_rates"][value] = completion_rate
+            
+            # Calculate overall parameter impact (variation in mean performance)
+            if len(grouped_data) > 1:
+                mean_performances = [stats["mean"] for stats in param_stats["value_performance"].values()]
+                param_stats["overall_impact"] = {
+                    "range": max(mean_performances) - min(mean_performances),
+                    "std": np.std(mean_performances)
+                }
+            
+            sensitivity_analysis[param_name] = param_stats
+            
+        except Exception as e:
+            logger.error(f"Error analyzing parameter {param_name}: {e}")
+            continue
     
     # Sort parameters by impact
     impact_ranking = []
@@ -564,9 +606,30 @@ def analyze_parameter_sensitivity(study, output_dir):
     # Add ranking to sensitivity analysis
     sensitivity_analysis["impact_ranking"] = impact_ranking
     
-    # Save to file
-    with open(output_dir / "parameter_sensitivity.json", "w") as f:
-        json.dump(sensitivity_analysis, f, indent=4)
+    try:
+        # Save to file
+        with open(output_dir / "parameter_sensitivity.json", "w") as f:
+            json.dump(sensitivity_analysis, f, indent=4)
+            
+        # Generate visualization of top parameters by impact
+        if impact_ranking:
+            plt.figure(figsize=(12, 6))
+            params = [item["parameter"] for item in impact_ranking[:10]]  # Top 10 parameters
+            impacts = [item["impact_range"] for item in impact_ranking[:10]]
+            
+            plt.bar(params, impacts, alpha=0.7)
+            plt.xlabel("Parameter")
+            plt.ylabel("Performance Impact Range")
+            plt.title("Top Parameters by Impact on Performance")
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+            plt.savefig(output_dir / "parameter_impact_ranking.png", dpi=300)
+            plt.close()
+            
+    except Exception as e:
+        logger.error(f"Error saving parameter sensitivity analysis: {e}")
+    
+    return sensitivity_analysis
 
 def analyze_early_stopping_patterns(study, output_dir):
     """Analyze patterns in early stopping and overfitting"""

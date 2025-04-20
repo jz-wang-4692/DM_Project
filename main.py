@@ -188,7 +188,10 @@ def main():
         scheduler=scheduler,
         num_epochs=config['epochs'],
         device=device,
-        mixup_alpha=config['mixup_alpha']
+        mixup_alpha=config['mixup_alpha'],
+        early_stopping_patience=config.get('early_stopping_patience', 15),
+        early_stopping_delta=config.get('early_stopping_delta', 0.001),
+        checkpoint_dir=config.get('checkpoint_dir', None)
     )
     
     # Evaluate on test set

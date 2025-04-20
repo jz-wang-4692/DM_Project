@@ -30,16 +30,20 @@ class SearchSpaces:
     def define_regularization_space(trial):
         """Define search space for regularization parameters to combat overfitting"""
         params = {}
+    
+            # First suggest mixup_alpha
+        params['mixup_alpha'] = trial.suggest_float('mixup_alpha', 0.0, 0.4, step=0.05)
+        
+        # Then adjust label_smoothing range based on mixup_alpha
+        if params['mixup_alpha'] > 0.3:
+            # Use lower label_smoothing when mixup is high
+            params['label_smoothing'] = trial.suggest_float('label_smoothing', 0.0, 0.15, step=0.01)
+        else:
+            # Allow higher label_smoothing when mixup is lower
+            params['label_smoothing'] = trial.suggest_float('label_smoothing', 0.0, 0.2, step=0.01)
         
         # Dropout-related parameters
         params['drop_rate'] = trial.suggest_float('drop_rate', 0.1, 0.5, step=0.05)
-        params['attn_drop_rate'] = trial.suggest_float('attn_drop_rate', 0.0, 0.3, step=0.05)
-        
-        # Label smoothing (strong regularizer)
-        params['label_smoothing'] = trial.suggest_float('label_smoothing', 0.0, 0.2, step=0.01)
-        
-        # MixUp alpha parameter
-        params['mixup_alpha'] = trial.suggest_float('mixup_alpha', 0.0, 0.4, step=0.05)
         
         # Data augmentation parameters
         params['random_erasing_prob'] = trial.suggest_float('random_erasing_prob', 0.0, 0.4, step=0.05)
@@ -51,11 +55,10 @@ class SearchSpaces:
         
         # Early stopping parameters
         params['early_stopping_patience'] = trial.suggest_int('early_stopping_patience', 5, 12)
-        # params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta', 0.0, 0.01, step=0.001)
         params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta',
-                                                             2e-4,   # 0.02% absolute accuracy gain
-                                                             1e-2,   # up to 1.0% gain
-                                                             log=True) # use a log‑space than a linear equally‑spaced grid of values
+                                                            2e-4,   # 0.02% absolute accuracy gain
+                                                            1e-2,   # up to 1.0% gain
+                                                            log=True) # use a log‑space than a linear equally‑spaced grid of values
         
         return params
     
@@ -115,13 +118,13 @@ class SearchSpaces:
         params['mlp_ratio'] = 4.0  # Fixed MLP ratio
         params['epochs'] = 100  # Increased from 50 to 100
         
-        # Adjust early stopping patience based on trial number for progressive patience
-        if 'early_stopping_patience' in params:
-            params['early_stopping_patience'] = SearchSpaces.calculate_progressive_patience(
-                trial.number, 
-                min_patience=params['early_stopping_patience'], 
-                max_patience=20
-            )
+        # # Adjust early stopping patience based on trial number for progressive patience
+        # if 'early_stopping_patience' in params:
+        #     params['early_stopping_patience'] = SearchSpaces.calculate_progressive_patience(
+        #         trial.number, 
+        #         min_patience=params['early_stopping_patience'], 
+        #         max_patience=20
+        #     )
         
         return params
     
