@@ -50,7 +50,7 @@ class SearchSpaces:
         params['weight_decay'] = trial.suggest_float('weight_decay', 0.01, 0.1, log=True)
         
         # Early stopping parameters
-        params['early_stopping_patience'] = trial.suggest_int('early_stopping_patience', 5, 15)
+        params['early_stopping_patience'] = trial.suggest_int('early_stopping_patience', 5, 12)
         # params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta', 0.0, 0.01, step=0.001)
         params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta',
                                                              2e-4,   # 0.02% absolute accuracy gain
