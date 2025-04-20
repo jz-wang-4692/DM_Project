@@ -49,6 +49,14 @@ class SearchSpaces:
         # Weight decay (L2 regularization)
         params['weight_decay'] = trial.suggest_float('weight_decay', 0.01, 0.1, log=True)
         
+        # Early stopping parameters
+        params['early_stopping_patience'] = trial.suggest_int('early_stopping_patience', 5, 15)
+        # params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta', 0.0, 0.01, step=0.001)
+        params['early_stopping_delta'] = trial.suggest_float('early_stopping_delta',
+                                                             2e-4,   # 0.02% absolute accuracy gain
+                                                             1e-2,   # up to 1.0% gain
+                                                             log=True) # use a log‑space than a linear equally‑spaced grid of values
+        
         return params
     
     @staticmethod
@@ -81,6 +89,13 @@ class SearchSpaces:
         params['seed'] = 42  # Default random seed
         
         return params
+
+    @staticmethod
+    def calculate_progressive_patience(trial_number, min_patience=5, max_patience=15):
+        """Calculate progressive patience based on trial number"""
+        # Use lower patience for early trials, higher for later trials
+        # This allows quickly pruning obviously bad configs while giving promising ones more time
+        return min(min_patience + (trial_number // 5), max_patience)
     
     @staticmethod
     def get_trial_params(trial, pe_type):
@@ -98,7 +113,15 @@ class SearchSpaces:
         
         # Add fixed parameters
         params['mlp_ratio'] = 4.0  # Fixed MLP ratio
-        params['epochs'] = 50  # Fixed number of training epochs
+        params['epochs'] = 100  # Increased from 50 to 100
+        
+        # Adjust early stopping patience based on trial number for progressive patience
+        if 'early_stopping_patience' in params:
+            params['early_stopping_patience'] = SearchSpaces.calculate_progressive_patience(
+                trial.number, 
+                min_patience=params['early_stopping_patience'], 
+                max_patience=20
+            )
         
         return params
     
@@ -116,5 +139,14 @@ class SearchSpaces:
             valid_heads = [h for h in [4, 8, 12, 16] if embed_dim % h == 0]
             if valid_heads:
                 constraints['num_heads'] = valid_heads[0]
+        
+        # Add constraint for mixup_alpha and label_smoothing combination
+        # (too much of both can make training unstable)
+        mixup_alpha = trial.params.get('mixup_alpha', 0.2)
+        label_smoothing = trial.params.get('label_smoothing', 0.1)
+        
+        if mixup_alpha > 0.3 and label_smoothing > 0.15:
+            # Reduce one of them to avoid over-regularization
+            constraints['label_smoothing'] = 0.1
         
         return constraints

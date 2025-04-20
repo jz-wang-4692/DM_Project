@@ -9,6 +9,7 @@ This script:
 
 import os
 import sys
+# Add project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
@@ -56,6 +57,10 @@ def parse_args():
                         help='Directory to save final models and results')
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu',
                         help='Device to use for training')
+    parser.add_argument('--use_checkpoints', action='store_true',
+                        help='Use best checkpoints from optimization instead of retraining')
+    parser.add_argument('--early_stopping_patience', type=int, default=20,
+                        help='Early stopping patience for final evaluation')
     
     return parser.parse_args()
 
@@ -105,6 +110,18 @@ def count_parameters(model):
     """Count the number of trainable parameters in a model"""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+def load_checkpoint(model, checkpoint_path, device):
+    """Load model from checkpoint"""
+    logger.info(f"Loading checkpoint from {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    
+    if 'model_state_dict' in checkpoint:
+        model.load_state_dict(checkpoint['model_state_dict'])
+    else:
+        model.load_state_dict(checkpoint)
+    
+    return model
+
 def train_and_evaluate(config, pe_type, seed, output_dir, args):
     """Train and evaluate a model with the given configuration and seed"""
     # Set random seeds for reproducibility
@@ -117,12 +134,16 @@ def train_and_evaluate(config, pe_type, seed, output_dir, args):
     run_dir = Path(output_dir) / pe_type / f"seed_{seed}"
     run_dir.mkdir(parents=True, exist_ok=True)
     
+    # Create checkpoint directory for saving best model
+    checkpoint_dir = run_dir / "checkpoints"
+    checkpoint_dir.mkdir(exist_ok=True)
+    
     # Save configuration
     save_config(config, run_dir / "config.json")
     
     # Create data loaders
     train_loader, val_loader, test_loader = get_cifar10_dataloaders(
-        batch_size=config['batch_size'],
+        batch_size=config.get('batch_size', 128),
         num_workers=4,  # Fixed for final evaluation
         aug_params={
             'random_crop_padding': config.get('random_crop_padding', 4),
@@ -150,6 +171,13 @@ def train_and_evaluate(config, pe_type, seed, output_dir, args):
         **model_kwargs
     )
     model = model.to(args.device)
+    
+    # If using checkpoints, check if best checkpoint exists
+    if args.use_checkpoints:
+        best_checkpoint_path = Path(args.results_dir) / "best_configs" / pe_type / "best_checkpoint.pth"
+        if best_checkpoint_path.exists():
+            model = load_checkpoint(model, best_checkpoint_path, args.device)
+            logger.info(f"Loaded best checkpoint for {pe_type}")
     
     # Count parameters
     total_params = count_parameters(model)
@@ -188,19 +216,36 @@ def train_and_evaluate(config, pe_type, seed, output_dir, args):
         lr_decay_factor=config.get('lr_decay_factor', 0.8)
     )
     
-    # Train model
-    logger.info(f"Training {pe_type} model with seed {seed}")
-    model, history = train_model(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        criterion=criterion,
-        optimizer=optimizer,
-        scheduler=scheduler,
-        num_epochs=args.num_epochs,
-        device=args.device,
-        mixup_alpha=config.get('mixup_alpha', 0.2)
-    )
+    # If not using pre-trained checkpoints, train the model
+    history = None
+    if not args.use_checkpoints:
+        # Train model with early stopping
+        logger.info(f"Training {pe_type} model with seed {seed}")
+        model, history = train_model(
+            model=model,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            criterion=criterion,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            num_epochs=args.num_epochs,
+            device=args.device,
+            mixup_alpha=config.get('mixup_alpha', 0.2),
+            early_stopping_patience=args.early_stopping_patience,
+            early_stopping_delta=config.get('early_stopping_delta', 0.001),
+            checkpoint_dir=str(checkpoint_dir)
+        )
+    else:
+        # Create dummy history for pre-trained models
+        history = {
+            'train_acc': [0.0],
+            'val_acc': [0.0],
+            'train_loss': [0.0],
+            'val_loss': [0.0],
+            'train_val_gap': [0.0],
+            'best_epoch': 0,
+            'early_stopped': False
+        }
     
     # Evaluate on test set
     logger.info(f"Evaluating {pe_type} model with seed {seed}")
@@ -220,19 +265,21 @@ def train_and_evaluate(config, pe_type, seed, output_dir, args):
         'history': history,
         'test_accuracy': test_acc,
         'test_loss': test_loss,
-        'config': config
+        'config': config,
+        'used_checkpoint': args.use_checkpoints
     }
     
     with open(run_dir / 'results.json', 'w') as f:
         json.dump(results, f, indent=4)
     
     # Use centralized visualization to plot training history
-    plot_training_history(
-        history, 
-        test_metrics=(test_loss, test_acc),
-        output_path=run_dir / 'training_history.png', 
-        pe_type=f"{pe_type} (Seed {seed})"
-    )
+    if not args.use_checkpoints and history:
+        plot_training_history(
+            history, 
+            test_metrics=(test_loss, test_acc),
+            output_path=run_dir / 'training_history.png', 
+            pe_type=f"{pe_type} (Seed {seed})"
+        )
     
     return results
 
@@ -261,18 +308,34 @@ def generate_summary_tables(results, output_dir):
         summary_data[pe_type]['test_accuracy'].append(result['test_accuracy'])
         summary_data[pe_type]['total_parameters'].append(result['total_parameters'])
         summary_data[pe_type]['pe_parameters'].append(result['pe_parameters'])
+        
+        # Add early stopping info if available
+        if 'history' in result and result['history'] is not None:
+            history = result['history']
+            if 'early_stopped' in history:
+                summary_data[pe_type]['early_stopped'].append(history['early_stopped'])
+            if 'best_epoch' in history:
+                summary_data[pe_type]['best_epoch'].append(history['best_epoch'])
     
     # Calculate statistics
     summary_table = []
     for pe_type, data in summary_data.items():
-        summary_table.append({
+        entry = {
             'PE Type': pe_type,
             'Test Accuracy (Mean)': np.mean(data['test_accuracy']),
             'Test Accuracy (Std)': np.std(data['test_accuracy']),
             'Parameters (Total)': np.mean(data['total_parameters']),
             'Parameters (PE)': np.mean(data['pe_parameters']),
             'PE Parameters (%)': np.mean(data['pe_parameters']) / np.mean(data['total_parameters']) * 100
-        })
+        }
+        
+        # Add early stopping statistics if available
+        if 'early_stopped' in data:
+            entry['Early Stopped (%)'] = sum(data['early_stopped']) / len(data['early_stopped']) * 100
+        if 'best_epoch' in data:
+            entry['Avg Best Epoch'] = np.mean(data['best_epoch'])
+        
+        summary_table.append(entry)
     
     # Convert to DataFrame
     summary_df = pd.DataFrame(summary_table)
@@ -288,6 +351,67 @@ def generate_summary_tables(results, output_dir):
         f.write(summary_df.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
     
     return summary_df
+
+def plot_early_stopping_comparison(results, output_dir):
+    """Plot early stopping patterns for different positional encoding methods"""
+    pe_types = sorted(set(result['pe_type'] for result in results))
+    
+    # Early stopping data
+    early_stopping_rates = []
+    best_epochs = []
+    train_val_gaps = []
+    
+    for pe_type in pe_types:
+        type_results = [r for r in results if r['pe_type'] == pe_type]
+        
+        # Skip if no results or history not available
+        if not type_results or 'history' not in type_results[0] or type_results[0]['history'] is None:
+            early_stopping_rates.append(0)
+            best_epochs.append(0)
+            train_val_gaps.append(0)
+            continue
+        
+        # Calculate early stopping rate
+        early_stopped = sum(1 for r in type_results 
+                           if 'history' in r and r['history'] is not None 
+                           and r['history'].get('early_stopped', False))
+        early_stopping_rates.append(early_stopped / len(type_results) if type_results else 0)
+        
+        # Calculate average best epoch
+        best_epoch_values = [r['history'].get('best_epoch', 0) for r in type_results 
+                           if 'history' in r and r['history'] is not None]
+        best_epochs.append(np.mean(best_epoch_values) if best_epoch_values else 0)
+        
+        # Calculate average train-val gap
+        gap_values = [np.mean(r['history'].get('train_val_gap', [0])) for r in type_results 
+                     if 'history' in r and r['history'] is not None and 'train_val_gap' in r['history']]
+        train_val_gaps.append(np.mean(gap_values) if gap_values else 0)
+    
+    # Create figure
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
+    
+    # Plot early stopping rates
+    colors = [PE_TYPE_COLORS.get(pe, 'gray') for pe in pe_types]
+    ax1.bar(pe_types, early_stopping_rates, color=colors, alpha=0.7)
+    for i, v in enumerate(early_stopping_rates):
+        ax1.text(i, v + 0.02, f'{v:.2f}', ha='center')
+    set_plot_style(ax1, 'Early Stopping Rate by PE Type', 'Positional Encoding Type', 'Early Stopping Rate', legend=False)
+    
+    # Plot average best epoch
+    ax2.bar(pe_types, best_epochs, color=colors, alpha=0.7)
+    for i, v in enumerate(best_epochs):
+        ax2.text(i, v + 1, f'{v:.1f}', ha='center')
+    set_plot_style(ax2, 'Average Best Epoch by PE Type', 'Positional Encoding Type', 'Best Epoch', legend=False)
+    
+    # Plot average train-val gap
+    ax3.bar(pe_types, train_val_gaps, color=colors, alpha=0.7)
+    for i, v in enumerate(train_val_gaps):
+        ax3.text(i, v + 0.01, f'{v:.3f}', ha='center')
+    set_plot_style(ax3, 'Average Train-Val Gap by PE Type', 'Positional Encoding Type', 'Train-Val Gap', legend=False)
+    
+    plt.tight_layout()
+    plt.savefig(Path(output_dir) / 'early_stopping_comparison.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
 def main():
     args = parse_args()
@@ -334,9 +458,10 @@ def main():
     plot_convergence_comparison(all_results, output_dir / 'convergence_comparison.png')
     plot_parameter_efficiency(all_results, output_dir / 'parameter_efficiency.png')
     plot_configuration_heatmap(all_results, output_dir / 'configuration_heatmap.png')
-    
-    # Add new overfitting analysis plot from centralized visualization
     plot_overfitting_analysis(all_results, output_dir / 'overfitting_analysis.png')
+    
+    # Add early stopping comparison visualization
+    plot_early_stopping_comparison(all_results, output_dir / 'early_stopping_comparison.png')
     
     logger.info(f"All results and visualizations saved to {output_dir}")
 
