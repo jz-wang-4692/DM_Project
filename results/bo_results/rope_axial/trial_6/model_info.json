@@ -1,0 +1,14 @@
+{
+    "pe_type": "rope_axial",
+    "total_parameters": 7128330,
+    "pe_parameters": 0,
+    "pe_percentage": 0.0,
+    "img_size": 32,
+    "patch_size": 4,
+    "embed_dim": 256,
+    "depth": 9,
+    "num_heads": 16,
+    "timestamp": "2025-04-20_15-38-46",
+    "test_accuracy": 0.6832,
+    "test_loss": 1.0063282732009888
+}

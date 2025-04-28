@@ -1,0 +1,14 @@
+{
+    "pe_type": "ape",
+    "total_parameters": 7180298,
+    "pe_parameters": 65536,
+    "pe_percentage": 0.9127197784827314,
+    "img_size": 32,
+    "patch_size": 2,
+    "embed_dim": 256,
+    "depth": 9,
+    "num_heads": 8,
+    "timestamp": "2025-04-21_19-00-51",
+    "test_accuracy": 0.6404,
+    "test_loss": 1.544935901260376
+}

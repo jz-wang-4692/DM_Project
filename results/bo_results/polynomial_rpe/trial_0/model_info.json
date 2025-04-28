@@ -1,0 +1,14 @@
+{
+    "pe_type": "polynomial_rpe",
+    "total_parameters": 3157378,
+    "pe_parameters": 0,
+    "pe_percentage": 0.0,
+    "img_size": 32,
+    "patch_size": 8,
+    "embed_dim": 192,
+    "depth": 7,
+    "num_heads": 12,
+    "timestamp": "2025-04-23_11-41-32",
+    "test_accuracy": 0.5779,
+    "test_loss": 1.3365347427368164
+}

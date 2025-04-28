@@ -1,0 +1,63 @@
+{
+    "model": {
+        "pe_type": null,
+        "img_size": null,
+        "patch_size": null,
+        "embed_dim": null,
+        "depth": null,
+        "num_heads": null,
+        "mlp_ratio": null,
+        "drop_rate": null,
+        "polynomial_degree": null
+    },
+    "training": {
+        "batch_size": null,
+        "epochs": null,
+        "lr": null,
+        "weight_decay": null,
+        "warmup_epochs": null,
+        "mixup_alpha": null,
+        "lr_decay_factor": null,
+        "label_smoothing": null
+    },
+    "augmentation": {
+        "random_crop_padding": null,
+        "random_erasing_prob": null,
+        "color_jitter_brightness": null,
+        "color_jitter_contrast": null
+    },
+    "system": {
+        "device": null,
+        "num_workers": null,
+        "output_dir": null,
+        "seed": null,
+        "checkpoint_dir": null
+    },
+    "pe_type": "ape",
+    "img_size": 32,
+    "embed_dim": 320,
+    "depth": 10,
+    "num_heads": 8,
+    "patch_size": 4,
+    "mixup_alpha": 0.2,
+    "label_smoothing": 0.03,
+    "drop_rate": 0.4,
+    "random_erasing_prob": 0.30000000000000004,
+    "color_jitter_brightness": 0.15000000000000002,
+    "color_jitter_contrast": 0.25,
+    "weight_decay": 0.06664363257420337,
+    "early_stopping_patience": 12,
+    "early_stopping_delta": 0.00723640599644152,
+    "lr": 0.00019402538724108136,
+    "warmup_epochs": 10,
+    "lr_decay_factor": 0.8,
+    "batch_size": 256,
+    "device": "cuda",
+    "num_workers": 4,
+    "random_crop_padding": 4,
+    "output_dir": "results/bo_results/ape/trial_45",
+    "seed": 42,
+    "mlp_ratio": 4.0,
+    "epochs": 100,
+    "checkpoint_dir": "results/bo_results/ape/trial_45/checkpoints"
+}

@@ -1,0 +1,252 @@
+[
+    {
+        "value": 9,
+        "performance": 0.5776,
+        "trial_number": 0
+    },
+    {
+        "value": 6,
+        "performance": 0.7484,
+        "trial_number": 1
+    },
+    {
+        "value": 7,
+        "performance": 0.4714,
+        "trial_number": 2
+    },
+    {
+        "value": 11,
+        "performance": 0.6636,
+        "trial_number": 3
+    },
+    {
+        "value": 9,
+        "performance": 0.6208,
+        "trial_number": 4
+    },
+    {
+        "value": 11,
+        "performance": 0.6972,
+        "trial_number": 5
+    },
+    {
+        "value": 7,
+        "performance": 0.7648,
+        "trial_number": 6
+    },
+    {
+        "value": 7,
+        "performance": 0.618,
+        "trial_number": 7
+    },
+    {
+        "value": 11,
+        "performance": 0.7456,
+        "trial_number": 8
+    },
+    {
+        "value": 7,
+        "performance": 0.4892,
+        "trial_number": 9
+    },
+    {
+        "value": 5,
+        "performance": 0.7256,
+        "trial_number": 11
+    },
+    {
+        "value": 5,
+        "performance": 0.7672,
+        "trial_number": 12
+    },
+    {
+        "value": 5,
+        "performance": 0.7578,
+        "trial_number": 13
+    },
+    {
+        "value": 8,
+        "performance": 0.5804,
+        "trial_number": 14
+    },
+    {
+        "value": 6,
+        "performance": 0.7686,
+        "trial_number": 15
+    },
+    {
+        "value": 5,
+        "performance": 0.7586,
+        "trial_number": 16
+    },
+    {
+        "value": 6,
+        "performance": 0.7326,
+        "trial_number": 17
+    },
+    {
+        "value": 6,
+        "performance": 0.7614,
+        "trial_number": 18
+    },
+    {
+        "value": 8,
+        "performance": 0.7148,
+        "trial_number": 19
+    },
+    {
+        "value": 5,
+        "performance": 0.7382,
+        "trial_number": 20
+    },
+    {
+        "value": 10,
+        "performance": 0.7182,
+        "trial_number": 21
+    },
+    {
+        "value": 6,
+        "performance": 0.745,
+        "trial_number": 22
+    },
+    {
+        "value": 7,
+        "performance": 0.7638,
+        "trial_number": 23
+    },
+    {
+        "value": 6,
+        "performance": 0.7518,
+        "trial_number": 24
+    },
+    {
+        "value": 8,
+        "performance": 0.7618,
+        "trial_number": 25
+    },
+    {
+        "value": 12,
+        "performance": 0.4382,
+        "trial_number": 26
+    },
+    {
+        "value": 7,
+        "performance": 0.7174,
+        "trial_number": 27
+    },
+    {
+        "value": 5,
+        "performance": 0.7298,
+        "trial_number": 28
+    },
+    {
+        "value": 6,
+        "performance": 0.7172,
+        "trial_number": 29
+    },
+    {
+        "value": 9,
+        "performance": 0.774,
+        "trial_number": 30
+    },
+    {
+        "value": 10,
+        "performance": 0.6392,
+        "trial_number": 31
+    },
+    {
+        "value": 9,
+        "performance": 0.7676,
+        "trial_number": 32
+    },
+    {
+        "value": 9,
+        "performance": 0.7764,
+        "trial_number": 33
+    },
+    {
+        "value": 9,
+        "performance": 0.7692,
+        "trial_number": 34
+    },
+    {
+        "value": 10,
+        "performance": 0.7866,
+        "trial_number": 35
+    },
+    {
+        "value": 10,
+        "performance": 0.7834,
+        "trial_number": 36
+    },
+    {
+        "value": 10,
+        "performance": 0.7412,
+        "trial_number": 37
+    },
+    {
+        "value": 10,
+        "performance": 0.6006,
+        "trial_number": 38
+    },
+    {
+        "value": 11,
+        "performance": 0.768,
+        "trial_number": 39
+    },
+    {
+        "value": 10,
+        "performance": 0.6988,
+        "trial_number": 40
+    },
+    {
+        "value": 9,
+        "performance": 0.6794,
+        "trial_number": 41
+    },
+    {
+        "value": 9,
+        "performance": 0.7468,
+        "trial_number": 42
+    },
+    {
+        "value": 9,
+        "performance": 0.7974,
+        "trial_number": 43
+    },
+    {
+        "value": 11,
+        "performance": 0.7498,
+        "trial_number": 44
+    },
+    {
+        "value": 8,
+        "performance": 0.736,
+        "trial_number": 45
+    },
+    {
+        "value": 10,
+        "performance": 0.7644,
+        "trial_number": 46
+    },
+    {
+        "value": 9,
+        "performance": 0.739,
+        "trial_number": 47
+    },
+    {
+        "value": 12,
+        "performance": 0.7888,
+        "trial_number": 48
+    },
+    {
+        "value": 12,
+        "performance": 0.6836,
+        "trial_number": 49
+    },
+    {
+        "value": 11,
+        "performance": 0.6394,
+        "trial_number": 50
+    }
+]

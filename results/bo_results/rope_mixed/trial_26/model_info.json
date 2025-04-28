@@ -1,0 +1,14 @@
+{
+    "pe_type": "rope_mixed",
+    "total_parameters": 2188554,
+    "pe_parameters": 0,
+    "pe_percentage": 0.0,
+    "img_size": 32,
+    "patch_size": 2,
+    "embed_dim": 128,
+    "depth": 11,
+    "num_heads": 16,
+    "timestamp": "2025-04-22_16-53-16",
+    "test_accuracy": 0.705,
+    "test_loss": 1.002812965965271
+}

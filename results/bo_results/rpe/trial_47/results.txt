@@ -1,0 +1,8 @@
+Model: Vision Transformer with rpe
+Embedding dimension: 192
+Depth: 12
+Number of heads: 8
+Training epochs: 100
+Final training accuracy: 0.8386
+Final validation accuracy: 0.7306
+Test accuracy: 0.7246

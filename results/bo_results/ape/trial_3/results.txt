@@ -1,0 +1,8 @@
+Model: Vision Transformer with ape
+Embedding dimension: 256
+Depth: 12
+Number of heads: 16
+Training epochs: 100
+Final training accuracy: 0.8434
+Final validation accuracy: 0.6604
+Test accuracy: 0.6446
