@@ -1,6 +1,3 @@
-Okay, let's create a comprehensive README.md file based on the structure and the detailed understanding of the project components.
-
-```markdown
 # ViT Positional Encoding Comparison with Bayesian Optimization
 
 This project investigates the performance impact of different positional encoding (PE) methods within a standard Vision Transformer (ViT) architecture, specifically trained and evaluated on the CIFAR-10 dataset. A key focus is the use of Bayesian Optimization (BO) via Optuna to rigorously tune hyperparameters for each PE method, aiming for both high accuracy and effective regularization against overfitting.
@@ -62,7 +59,7 @@ This project adapts and utilizes concepts or code from the following sources:
 │   │   ├── __init__.py         # Makes the directory a Python package
 │   │   └── fixed_rope_mixed.py # Implementation for RoPE (likely Axial and Mixed variants) logic
 │   └── vit_base.py           # Contains the base ViT model architecture (e.g., Attention blocks, MLP layers) that incorporates the different PE methods
-├── env                         # Lists Python package dependencies
+├── env_setup                         # Lists Python package dependencies
 │   ├── conda_environment.yml   # for conda
 │   └── pip_requirements.txt    # for pip      
 ├── results                   # Default directory for storing all experiment outputs (created during runtime)
@@ -124,24 +121,24 @@ This project uses the **CIFAR-10** dataset. The `utils/data.py` script will auto
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url>
-    cd <your-repo-name>
+    git clone https://github.com/jz-wang-4692/DM_Project.git
+    cd DM_Project
     ```
 2.  **Create Environment:** It's recommended to use a virtual environment (e.g., Conda or venv).
     ```bash
     # Using Conda (example)
-    conda create -n vit_pe python=3.10 # Or your preferred Python version
+    conda create -n vit_pe python=3.10
     conda activate vit_pe
     ```
-3.  **Install Dependencies:** Install the required Python packages listed in files under `env`.
+3.  **Install Dependencies:** Install the required Python packages listed in files under `env_setup`.
     ```bash
     # If using Conda primarily
-    conda env create -f env/conda_environment.yml
+    conda env create -f env_setup/conda_environment.yml
 
     # Or if using pip primarily
-    pip install -r env/pip_requirements.txt
+    pip install -r env_setup/pip_requirements.txt
     ```
-    Ensure you have PyTorch installed with the correct CUDA version if you plan to use a GPU. Visit [pytorch.org](https://pytorch.org/) for specific installation instructions.
+    Ensure you have PyTorch installed with the correct CUDA version. Visit [pytorch.org](https://pytorch.org/) for specific installation instructions.
 
 ## Usage
 
@@ -206,5 +203,3 @@ This stage uses the best hyperparameters found during BO to train (or load) fina
 ## License
 
 *(Optional: Specify the license for your code, e.g., MIT, Apache 2.0. Remember to respect the licenses of included code like RoPE-ViT)*
-
-```
