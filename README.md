@@ -80,7 +80,7 @@ This project adapts and utilizes concepts or code from the following sources:
 │   │   ├── rope_mixed/...      # BO results specific to RoPE-Mixed
 │   │   └── rpe/...             # BO results specific to RPE
 │   └── final_models          # Results from the final comparison run
-│       ├── ape/                # Final comparison results specific to APE
+│       ├── ape/                # Final comparison results specific to APE (created when run, not meaningful to be included now))
 │       │   ├── seed_42/...       # Results for a specific seed
 │       │   │   ├── config.json     # Config used for this run
 │       │   │   ├── model_final.pth # Final model weights for this run
