@@ -1,0 +1,6 @@
+PE Type,Test Accuracy (Mean),Test Accuracy (Std),Parameters (Total),Num Seeds Run
+rope_mixed,0.8442,0.0000,14815370.0000,1
+rope_axial,0.8092,0.0000,1790090.0000,1
+polynomial_rpe,0.7883,0.0000,3613834.0000,1
+ape,0.7794,0.0000,13653130.0000,1
+rpe,0.7756,0.0000,2440026.0000,1
