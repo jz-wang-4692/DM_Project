@@ -1,0 +1,252 @@
+[
+    {
+        "value": 0.00219053254972651,
+        "performance": 0.6052,
+        "trial_number": 0
+    },
+    {
+        "value": 0.0016977524322817406,
+        "performance": 0.6734,
+        "trial_number": 1
+    },
+    {
+        "value": 0.004086910996832279,
+        "performance": 0.5804,
+        "trial_number": 2
+    },
+    {
+        "value": 0.006965594873235381,
+        "performance": 0.6708,
+        "trial_number": 3
+    },
+    {
+        "value": 0.0003196521716771167,
+        "performance": 0.6812,
+        "trial_number": 4
+    },
+    {
+        "value": 0.0008431066333898233,
+        "performance": 0.6564,
+        "trial_number": 5
+    },
+    {
+        "value": 0.0015881460584240132,
+        "performance": 0.6834,
+        "trial_number": 6
+    },
+    {
+        "value": 0.0007142895924002008,
+        "performance": 0.5934,
+        "trial_number": 7
+    },
+    {
+        "value": 0.00021246643139819068,
+        "performance": 0.6502,
+        "trial_number": 8
+    },
+    {
+        "value": 0.00594510947864937,
+        "performance": 0.7816,
+        "trial_number": 9
+    },
+    {
+        "value": 0.007423093491467457,
+        "performance": 0.7518,
+        "trial_number": 10
+    },
+    {
+        "value": 0.009681568307307261,
+        "performance": 0.7562,
+        "trial_number": 11
+    },
+    {
+        "value": 0.009889889012873196,
+        "performance": 0.7332,
+        "trial_number": 12
+    },
+    {
+        "value": 0.003948862578541562,
+        "performance": 0.6954,
+        "trial_number": 13
+    },
+    {
+        "value": 0.004301451968078936,
+        "performance": 0.7616,
+        "trial_number": 14
+    },
+    {
+        "value": 0.003880501719114684,
+        "performance": 0.7604,
+        "trial_number": 15
+    },
+    {
+        "value": 0.003100034403191619,
+        "performance": 0.7274,
+        "trial_number": 16
+    },
+    {
+        "value": 0.005362999770226121,
+        "performance": 0.7216,
+        "trial_number": 17
+    },
+    {
+        "value": 0.0025990891868247364,
+        "performance": 0.7292,
+        "trial_number": 18
+    },
+    {
+        "value": 0.0009082711597338683,
+        "performance": 0.7576,
+        "trial_number": 19
+    },
+    {
+        "value": 0.005546950635576886,
+        "performance": 0.7606,
+        "trial_number": 20
+    },
+    {
+        "value": 0.005943355787147591,
+        "performance": 0.7786,
+        "trial_number": 21
+    },
+    {
+        "value": 0.005746736168618489,
+        "performance": 0.766,
+        "trial_number": 22
+    },
+    {
+        "value": 0.006809573261888373,
+        "performance": 0.7682,
+        "trial_number": 23
+    },
+    {
+        "value": 0.0077180858387297215,
+        "performance": 0.745,
+        "trial_number": 24
+    },
+    {
+        "value": 0.0028585038487066563,
+        "performance": 0.8552,
+        "trial_number": 25
+    },
+    {
+        "value": 0.0022174895392017505,
+        "performance": 0.7136,
+        "trial_number": 26
+    },
+    {
+        "value": 0.003040664450860583,
+        "performance": 0.8492,
+        "trial_number": 27
+    },
+    {
+        "value": 0.00299627041303868,
+        "performance": 0.685,
+        "trial_number": 28
+    },
+    {
+        "value": 0.001993360656992939,
+        "performance": 0.6474,
+        "trial_number": 29
+    },
+    {
+        "value": 0.0012884503137988502,
+        "performance": 0.6272,
+        "trial_number": 30
+    },
+    {
+        "value": 0.0031402921103451152,
+        "performance": 0.7644,
+        "trial_number": 31
+    },
+    {
+        "value": 0.0011925050060369253,
+        "performance": 0.8066,
+        "trial_number": 32
+    },
+    {
+        "value": 0.001209975338741076,
+        "performance": 0.8252,
+        "trial_number": 33
+    },
+    {
+        "value": 0.0012065202461602248,
+        "performance": 0.8356,
+        "trial_number": 34
+    },
+    {
+        "value": 0.0005745215671592133,
+        "performance": 0.6724,
+        "trial_number": 35
+    },
+    {
+        "value": 0.00045388959344225044,
+        "performance": 0.8014,
+        "trial_number": 36
+    },
+    {
+        "value": 0.00108953414991811,
+        "performance": 0.7346,
+        "trial_number": 37
+    },
+    {
+        "value": 0.001692913433960108,
+        "performance": 0.6574,
+        "trial_number": 38
+    },
+    {
+        "value": 0.0021192833712192615,
+        "performance": 0.7288,
+        "trial_number": 39
+    },
+    {
+        "value": 0.001478132838331508,
+        "performance": 0.64,
+        "trial_number": 40
+    },
+    {
+        "value": 0.0011928982660087079,
+        "performance": 0.8296,
+        "trial_number": 41
+    },
+    {
+        "value": 0.0008478589561794202,
+        "performance": 0.8052,
+        "trial_number": 42
+    },
+    {
+        "value": 0.000675258440230914,
+        "performance": 0.8074,
+        "trial_number": 43
+    },
+    {
+        "value": 0.0009661601329691262,
+        "performance": 0.7654,
+        "trial_number": 44
+    },
+    {
+        "value": 0.001884974786673687,
+        "performance": 0.7094,
+        "trial_number": 45
+    },
+    {
+        "value": 0.001423540011350638,
+        "performance": 0.7946,
+        "trial_number": 47
+    },
+    {
+        "value": 0.002653408097333564,
+        "performance": 0.5932,
+        "trial_number": 48
+    },
+    {
+        "value": 0.0010973114949637773,
+        "performance": 0.7946,
+        "trial_number": 49
+    },
+    {
+        "value": 0.00046067217929124144,
+        "performance": 0.7732,
+        "trial_number": 50
+    }
+]

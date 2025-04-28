@@ -1,0 +1,8 @@
+Model: Vision Transformer with polynomial_rpe
+Embedding dimension: 192
+Depth: 8
+Number of heads: 12
+Training epochs: 100
+Final training accuracy: 0.8832
+Final validation accuracy: 0.7878
+Test accuracy: 0.7845

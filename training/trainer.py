@@ -3,6 +3,7 @@ import time
 import copy
 from tqdm import tqdm
 import numpy as np
+from pathlib import Path
 
 # Add mixup
 def mixup_data(x, y, alpha=0.2):
@@ -103,9 +104,11 @@ def evaluate(model, dataloader, criterion, device):
     return epoch_loss, epoch_acc
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler=None, 
-                num_epochs=100, device='cuda', mixup_alpha=0.2):
+                num_epochs=100, device='cuda', mixup_alpha=0.2, 
+                early_stopping_patience=15, early_stopping_delta=0.001,
+                checkpoint_dir=None):
     """
-    Train and evaluate a model.
+    Train and evaluate a model with early stopping.
     
     Args:
         model: PyTorch model
@@ -117,6 +120,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         num_epochs: Number of training epochs
         device: Device to train on
         mixup_alpha: Alpha parameter for mixup augmentation (0 to disable)
+        early_stopping_patience: Number of epochs to wait for improvement before stopping
+        early_stopping_delta: Minimum change in validation accuracy to qualify as improvement
+        checkpoint_dir: Directory to save checkpoints (if None, don't save)
         
     Returns:
         model: Best model based on validation accuracy
@@ -132,12 +138,19 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         'val_acc': [],
         'lr': [],          # Track learning rates
         'epoch_times': [], # Track time per epoch
-        'detailed_epochs': []  # Detailed per-epoch information
+        'detailed_epochs': [],  # Detailed per-epoch information
+        'train_val_gap': [],    # Track train-val accuracy gap for overfitting monitoring
+        'early_stopped': False,  # Flag to indicate if early stopping occurred
+        'best_epoch': 0         # Best epoch (for checkpoint reuse)
     }
+    
+    # Initialize early stopping variables
+    best_val_acc = 0.0
+    patience_counter = 0
+    best_epoch = 0
     
     # Initialize best model and metrics
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_acc = 0.0
     
     for epoch in range(num_epochs):
         print(f'Epoch {epoch+1}/{num_epochs}')
@@ -165,6 +178,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         # Calculate epoch time
         epoch_time = time.time() - epoch_start_time
         
+        # Calculate train-val accuracy gap (for overfitting detection)
+        train_val_gap = train_acc - val_acc
+        
         # Save history with more details
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
@@ -172,6 +188,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         history['val_acc'].append(val_acc)
         history['lr'].append(current_lr)
         history['epoch_times'].append(epoch_time)
+        history['train_val_gap'].append(train_val_gap)
         
         # Detailed epoch info
         epoch_info = {
@@ -180,6 +197,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
             'train_acc': train_acc,
             'val_loss': val_loss,
             'val_acc': val_acc,
+            'train_val_gap': train_val_gap,
             'lr': current_lr,
             'time_seconds': epoch_time,
         }
@@ -187,22 +205,46 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler
         
         print(f'Train Loss: {train_loss:.4f} Acc: {train_acc:.4f}')
         print(f'Val Loss: {val_loss:.4f} Acc: {val_acc:.4f}')
-        print(f'LR: {current_lr:.6f} Time: {epoch_time:.2f}s')
+        print(f'Gap: {train_val_gap:.4f} LR: {current_lr:.6f} Time: {epoch_time:.2f}s')
         
-        # Save best model
-        if val_acc > best_acc:
-            best_acc = val_acc
+        # Check if this is the best model
+        if val_acc > best_val_acc + early_stopping_delta:
+            print(f'Validation accuracy improved from {best_val_acc:.4f} to {val_acc:.4f}')
+            best_val_acc = val_acc
+            best_epoch = epoch
             best_model_wts = copy.deepcopy(model.state_dict())
+            patience_counter = 0
+            
+            # Save checkpoint if directory is provided
+            if checkpoint_dir is not None:
+                checkpoint_path = Path(checkpoint_dir) / f'best_checkpoint.pth'
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'val_acc': val_acc,
+                    'val_loss': val_loss,
+                }, checkpoint_path)
+        else:
+            patience_counter += 1
+            print(f'Validation accuracy did not improve. Patience: {patience_counter}/{early_stopping_patience}')
+        
+        # Early stopping check
+        if patience_counter >= early_stopping_patience:
+            print(f'Early stopping triggered after {epoch+1} epochs')
+            history['early_stopped'] = True
+            break
         
         print()
     
     time_elapsed = time.time() - since
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
-    print(f'Best val Acc: {best_acc:.4f}')
+    print(f'Best val Acc: {best_val_acc:.4f} at epoch {best_epoch+1}')
     
-    # Add total training time to history
+    # Add total training time and best epoch info to history
     history['total_training_time'] = time_elapsed
-    history['best_val_acc'] = best_acc
+    history['best_val_acc'] = best_val_acc
+    history['best_epoch'] = best_epoch
     
     # Load best model weights
     model.load_state_dict(best_model_wts)

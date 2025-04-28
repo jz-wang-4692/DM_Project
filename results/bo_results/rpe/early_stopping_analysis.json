@@ -1,0 +1,41 @@
+{
+    "n_early_stopped": 45,
+    "average_best_epoch": 52.22,
+    "early_stopping_rate": 0.9,
+    "average_train_val_gap": -0.022898017153339077,
+    "patience_analysis": {
+        "7": {
+            "mean_accuracy": 0.6708000000000002,
+            "count": 3
+        },
+        "9": {
+            "mean_accuracy": 0.7069333333333333,
+            "count": 6
+        },
+        "10": {
+            "mean_accuracy": 0.6923777777777778,
+            "count": 9
+        },
+        "6": {
+            "mean_accuracy": 0.6785000000000001,
+            "count": 2
+        },
+        "11": {
+            "mean_accuracy": 0.7094142857142857,
+            "count": 14
+        },
+        "12": {
+            "mean_accuracy": 0.7422333333333334,
+            "count": 12
+        },
+        "8": {
+            "mean_accuracy": 0.7016666666666667,
+            "count": 3
+        },
+        "5": {
+            "mean_accuracy": 0.733,
+            "count": 1
+        }
+    },
+    "gap_acc_correlation": -0.04582133422961707
+}

@@ -26,6 +26,7 @@ ENV/
 data/
 *.pt
 *.pth
+!/results/best_configs/*/best_checkpoint.pth
 
 # System
 .DS_Store

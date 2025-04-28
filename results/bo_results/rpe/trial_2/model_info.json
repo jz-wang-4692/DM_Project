@@ -1,0 +1,14 @@
+{
+    "pe_type": "rpe",
+    "total_parameters": 9937034,
+    "pe_parameters": 0,
+    "pe_percentage": 0.0,
+    "img_size": 32,
+    "patch_size": 8,
+    "embed_dim": 320,
+    "depth": 8,
+    "num_heads": 8,
+    "timestamp": "2025-04-22_04-20-21",
+    "test_accuracy": 0.5727,
+    "test_loss": 1.685569690322876
+}

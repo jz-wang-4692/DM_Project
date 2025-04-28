@@ -1,0 +1,63 @@
+{
+    "model": {
+        "pe_type": null,
+        "img_size": null,
+        "patch_size": null,
+        "embed_dim": null,
+        "depth": null,
+        "num_heads": null,
+        "mlp_ratio": null,
+        "drop_rate": null,
+        "polynomial_degree": null
+    },
+    "training": {
+        "batch_size": null,
+        "epochs": null,
+        "lr": null,
+        "weight_decay": null,
+        "warmup_epochs": null,
+        "mixup_alpha": null,
+        "lr_decay_factor": null,
+        "label_smoothing": null
+    },
+    "augmentation": {
+        "random_crop_padding": null,
+        "random_erasing_prob": null,
+        "color_jitter_brightness": null,
+        "color_jitter_contrast": null
+    },
+    "system": {
+        "device": null,
+        "num_workers": null,
+        "output_dir": null,
+        "seed": null,
+        "checkpoint_dir": null
+    },
+    "pe_type": "rope_mixed",
+    "img_size": 32,
+    "embed_dim": 192,
+    "depth": 7,
+    "num_heads": 12,
+    "patch_size": 8,
+    "mixup_alpha": 0.35000000000000003,
+    "label_smoothing": 0.03,
+    "drop_rate": 0.15000000000000002,
+    "random_erasing_prob": 0.05,
+    "color_jitter_brightness": 0.1,
+    "color_jitter_contrast": 0.15000000000000002,
+    "weight_decay": 0.027036160666620016,
+    "early_stopping_patience": 7,
+    "early_stopping_delta": 0.00219053254972651,
+    "lr": 2.3795221163877236e-05,
+    "warmup_epochs": 5,
+    "lr_decay_factor": 0.75,
+    "batch_size": 128,
+    "device": "cuda",
+    "num_workers": 4,
+    "random_crop_padding": 4,
+    "output_dir": "results/bo_results/rope_mixed/trial_0",
+    "seed": 42,
+    "mlp_ratio": 4.0,
+    "epochs": 100,
+    "checkpoint_dir": "results/bo_results/rope_mixed/trial_0/checkpoints"
+}

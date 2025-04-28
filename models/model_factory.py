@@ -180,6 +180,9 @@ def create_vit_model(
                 in_channels, embed_dim, kernel_size=patch_size, stride=patch_size
             )
         
+        # Disable absolute positional encoding
+        nn.init.zeros_(model.pos_embed)
+        
         # Replace attention with RPE attention
         for i, block in enumerate(model.blocks):
             block.attn = RelativePositionalAttention(
@@ -220,6 +223,9 @@ def create_vit_model(
             model.patch_embed.proj = nn.Conv2d(
                 in_channels, embed_dim, kernel_size=patch_size, stride=patch_size
             )
+
+        # Disable absolute positional encoding
+        nn.init.zeros_(model.pos_embed)
         
         # Replace attention with Polynomial RPE attention
         for i, block in enumerate(model.blocks):

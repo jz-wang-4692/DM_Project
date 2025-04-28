@@ -1,0 +1,8 @@
+Model: Vision Transformer with rope_mixed
+Embedding dimension: 320
+Depth: 11
+Number of heads: 16
+Training epochs: 100
+Final training accuracy: 0.8491
+Final validation accuracy: 0.7590
+Test accuracy: 0.7546
