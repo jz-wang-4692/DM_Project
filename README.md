@@ -196,10 +196,3 @@ This stage uses the best hyperparameters found during BO to train (or load) fina
 * **Bayesian Optimization:** `results/bo_results/` will contain subdirectories for each PE type, each holding the Optuna database (`optuna.db`), detailed logs and outputs for every trial (`trial_XXX/`), and overall analysis plots/summaries for that PE type's optimization run. `results/best_configs/` will contain the best `config.json`, `best_checkpoint.pth`, and `best_model_info.json` identified for each PE type during BO.
 * **Final Comparison:** `results/final_models/` will contain subdirectories for each PE type and seed combination evaluated, storing the final model, config used, detailed metrics (`results.json`), and potentially training plots. Crucially, it will also contain the overall comparative plots (`accuracy_comparison.png`, `convergence_comparison.png`, etc.) and the final summary tables (`summary_table.csv`, `summary_table.txt`) comparing all methods across the specified seeds.
 
-## Contributing
-
-*(Optional: Add guidelines if others might contribute)*
-
-## License
-
-*(Optional: Specify the license for your code, e.g., MIT, Apache 2.0. Remember to respect the licenses of included code like RoPE-ViT)*
